@@ -1,0 +1,56 @@
+name: app17000ft_new
+description: "A new Flutter project."
+publish_to: 'none'
+version: 1.0.0+1
+environment:
+  sdk: ^3.5.2
+dependencies:
+  flutter:
+    sdk: flutter
+  win32: 5.5.4
+  cupertino_icons: ^1.0.6
+  #  image_compression_flutter: ^1.0.4  # Check for the latest version
+  package_info_plus: ^8.0.0
+  google_fonts: ^6.2.1
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.13.1
+  fl_chart: ^0.63.0
+  url_launcher: ^6.2.3
+  flutter_bloc: ^8.1.3
+  get: ^4.6.6
+  connectivity_plus: ^5.0.2
+  flutter_image_compress: ^2.3.0
+  http: ^1.1.0
+  http_parser: ^4.0.0
+  get_storage: ^2.1.1
+  awesome_dialog: ^3.2.0
+  image_picker: ^1.1.1
+  intl: ^0.19.0
+  persistent_bottom_nav_bar: ^5.0.2
+  syncfusion_flutter_pdfviewer: ^24.2.8
+  flutter_local_notifications: ^17.0.1
+  shared_preferences: ^2.2.3
+  font_awesome_flutter: ^10.7.0
+  sqflite: ^2.3.3+1
+  path: ^1.9.0
+  path_provider: ^2.1.3
+  dropdown_search: ^5.0.6
+  permission_handler: ^11.3.1
+  win32: ^5.0.0
+
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo.png"  # Update this path with the path to your logo
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/logo.png"
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
+    - assets/app17000ft_new.db
