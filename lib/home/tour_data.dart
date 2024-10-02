@@ -4,6 +4,8 @@ import 'package:app17000ft_new/constants/color_const.dart';
 import 'package:app17000ft_new/home/home_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
+import '../components/custom_confirmation.dart';
 class SelectTourData extends StatefulWidget {
   const SelectTourData({super.key});
 
@@ -30,8 +32,19 @@ class _SelectTourDataState extends State<SelectTourData> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        bool shouldPop = await BaseClient().showLeaveConfirmationDialog(context);
-        return shouldPop;
+        IconData icon = Icons.check_circle;
+        bool shouldExit = await showDialog(
+            context: context,
+            builder: (_) => Confirmation(
+                iconname: icon,
+                title: 'Exit Confirmation',
+                yes: 'Yes',
+                no: 'no',
+                desc: 'Are you sure you want to leave this screen?',
+                onPressed: () async {
+                  Navigator.of(context).pop(true);
+                }));
+        return shouldExit;
       },
       child: Scaffold(
         appBar: const CustomAppbar(title: 'Select Tour ID'),
