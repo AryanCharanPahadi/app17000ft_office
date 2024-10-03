@@ -75,7 +75,7 @@ class _SchoolStaffVecSyncState extends State<SchoolStaffVecSync> {
                   Text(
                     'Syncing: ${(syncProgress.value * 100).toStringAsFixed(0)}%',
                     style: const TextStyle(
-                      fontSize: 24,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),

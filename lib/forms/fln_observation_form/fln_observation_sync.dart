@@ -76,7 +76,7 @@ class _FlnObservationSync extends State<FlnObservationSync> {
                   const SizedBox(height: 20),
                   Text(
                     'Syncing: ${(syncProgress.value * 100).toStringAsFixed(0)}%',
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   if (hasError.value)
                     const Text(

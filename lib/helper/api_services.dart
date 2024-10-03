@@ -60,4 +60,18 @@ class ApiService {
 
     return _tourList; // Return the list, whether empty or populated
   }
+
+  // Clear tour details upon logout
+  Future<void> clearTourDetailsOnLogout() async {
+    print('Clearing tour details on logout...');
+    await SqfliteDatabaseHelper().delete('tour_details');  // Clear from local DB
+    _tourList.clear();  // Clear in-memory list
+    print('Tour details cleared.');
+  }
+
+  // Refresh tour details on login
+  Future<void> refreshTourDetailsOnLogin(String? office) async {
+    print('Refreshing tour details on login...');
+    await fetchTourIds(office);  // Fetch fresh data and update local storage
+  }
 }

@@ -429,10 +429,16 @@ class _AlfaObservationFormState extends State<AlfaObservationForm> {
                                 child: GetBuilder<TourController>(
                                     init: TourController(),
                                     builder: (tourController) {
-                                      tourController.fetchTourDetails();
+                                      // Fetch tour details once, not on every rebuild.
+                                      if (tourController.getLocalTourList.isEmpty) {
+                                        tourController.fetchTourDetails();
+                                      }
+
                                       return Column(children: [
                                         if (showBasicDetails) ...[
-                                          LabelText(label: 'Basic Details'),
+                                          LabelText(
+                                            label: 'Basic Details',
+                                          ),
                                           CustomSizedBox(
                                             value: 20,
                                             side: 'height',
@@ -446,35 +452,28 @@ class _AlfaObservationFormState extends State<AlfaObservationForm> {
                                             side: 'height',
                                           ),
                                           CustomDropdownFormField(
-                                              focusNode:
-                                                  alfaObservationController
-                                                      .tourIdFocusNode,
-                                              options: tourController
+                                            focusNode: alfaObservationController.tourIdFocusNode,
+                                            options: tourController.getLocalTourList
+                                                .map((e) => e.tourId!) // Ensure tourId is non-nullable
+                                                .toList(),
+                                            selectedOption: alfaObservationController.tourValue,
+                                            onChanged: (value) {
+                                              // Safely handle the school list splitting by commas
+                                              splitSchoolLists = tourController
                                                   .getLocalTourList
-                                                  .map((e) => e.tourId!)
-                                                  .toList(),
-                                              selectedOption:
-                                                  alfaObservationController
-                                                      .tourValue,
-                                              onChanged: (value) {
-                                                splitSchoolLists =
-                                                    tourController
-                                                        .getLocalTourList
-                                                        .where((e) =>
-                                                            e.tourId! == value)
-                                                        .map((e) => e.allSchool!
-                                                            .split('|')
-                                                            .toList())
-                                                        .expand((x) => x)
-                                                        .toList();
-                                                setState(() {
-                                                  alfaObservationController
-                                                      .setSchool(null);
-                                                  alfaObservationController
-                                                      .setTour(value);
-                                                });
-                                              },
-                                              labelText: "Select Tour ID"),
+                                                  .where((e) => e.tourId == value)
+                                                  .map((e) => e.allSchool!.split(',').map((s) => s.trim()).toList())
+                                                  .expand((x) => x)
+                                                  .toList();
+
+                                              // Single setState call for efficiency
+                                              setState(() {
+                                                alfaObservationController.setSchool(null);
+                                                alfaObservationController.setTour(value);
+                                              });
+                                            },
+                                            labelText: "Select Tour ID",
+                                          ),
                                           CustomSizedBox(
                                             value: 20,
                                             side: 'height',
@@ -487,10 +486,10 @@ class _AlfaObservationFormState extends State<AlfaObservationForm> {
                                             value: 20,
                                             side: 'height',
                                           ),
+                                          // DropdownSearch for selecting a single school
                                           DropdownSearch<String>(
                                             validator: (value) {
-                                              if (value == null ||
-                                                  value.isEmpty) {
+                                              if (value == null || value.isEmpty) {
                                                 return "Please Select School";
                                               }
                                               return null;
@@ -498,27 +497,22 @@ class _AlfaObservationFormState extends State<AlfaObservationForm> {
                                             popupProps: PopupProps.menu(
                                               showSelectedItems: true,
                                               showSearchBox: true,
-                                              disabledItemFn: (String s) =>
-                                                  s.startsWith('I'),
+                                              disabledItemFn: (String s) => s.startsWith('I'), // Disable based on condition
                                             ),
-                                            items: splitSchoolLists,
-                                            dropdownDecoratorProps:
-                                                const DropDownDecoratorProps(
-                                              dropdownSearchDecoration:
-                                                  InputDecoration(
+                                            items: splitSchoolLists, // Split school list as strings
+                                            dropdownDecoratorProps: const DropDownDecoratorProps(
+                                              dropdownSearchDecoration: InputDecoration(
                                                 labelText: "Select School",
-                                                hintText: "Select School ",
+                                                hintText: "Select School",
                                               ),
                                             ),
                                             onChanged: (value) {
+                                              // Set the selected school
                                               setState(() {
-                                                alfaObservationController
-                                                    .setSchool(value);
+                                                alfaObservationController.setSchool(value);
                                               });
                                             },
-                                            selectedItem:
-                                                alfaObservationController
-                                                    .schoolValue,
+                                            selectedItem: alfaObservationController.schoolValue,
                                           ),
                                           CustomSizedBox(
                                             value: 20,

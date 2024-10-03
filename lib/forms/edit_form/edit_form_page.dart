@@ -7,6 +7,7 @@ import '../../components/custom_appBar.dart';
 import '../../components/custom_confirmation.dart';
 import '../../components/custom_dropdown.dart';
 import '../../components/custom_sizedBox.dart';
+import '../../helper/database_helper.dart';
 import '../../tourDetails/tour_controller.dart';
 import '../school_enrolment/school_enrolment.dart';
 import '../school_enrolment/school_enrolment_model.dart';
@@ -15,17 +16,12 @@ import '../school_facilities_&_mapping_form/school_facilities_modals.dart';
 import '../school_staff_vec_form/school_vec_from.dart';
 import '../school_staff_vec_form/school_vec_modals.dart';
 import 'edit controller.dart';
+import 'package:connectivity_plus/connectivity_plus.dart'; // For checking network status
 import 'package:dropdown_search/dropdown_search.dart';
-
-import '../../base_client/base_client.dart';
 import '../../helper/responsive_helper.dart';
-
-import 'local_db.dart';
-
 
 class EditFormPage extends StatefulWidget {
   const EditFormPage({super.key});
-
   @override
   State<EditFormPage> createState() => _EditFormPageState();
 }
@@ -34,63 +30,112 @@ class _EditFormPageState extends State<EditFormPage> {
   final ScrollController _scrollController = ScrollController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   List<String> splitSchoolLists = [];
-  String selectedFormLabel = '';  // Empty string for the default state
+  final SqfliteDatabaseHelper dbHelper = SqfliteDatabaseHelper();
+  String selectedFormLabel = ''; // Empty string for the default state
   Map<String, dynamic> formData = {}; // Store fetched form data
   String selectedSchool = '';
-
   // Instance of EditController
   late EditController editController;
-
+  Future<bool> _isConnected() async {
+    var connectivityResult = await Connectivity().checkConnectivity();
+    return connectivityResult != ConnectivityResult.none;
+  }
 
   @override
   void initState() {
     super.initState();
     editController = Get.put(EditController());
-    loadLocalData();
 
-    // Reset selected form label every time the page is loaded
+    _checkConnectivityAndShowPopup(); // Check connectivity and show pop-up if online
+
     setState(() {
-      selectedFormLabel = '';  // Set to empty so that "Select Form" shows up
-    });
+      selectedFormLabel = '';
+    }); // Set to empty so that "Select Form" shows up
   }
 
+  Future<void> _checkConnectivityAndShowPopup() async {
+    bool isConnected = await _isConnected();
+    if (isConnected) {
+      _showOnlinePopup(); // Show pop-up only if online
+    }
+  }
 
-
+  void _showOnlinePopup() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Notification'),
+          content: const Text('Select TourId and School. For edit the data in the offline mode!'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   Future<void> fetchData(String tourId, String school) async {
-    final url = 'https://mis.17000ft.org/apis/fast_apis/pre-fill-data.php?id=$tourId';
-    final response = await http.get(Uri.parse(url));
+    bool isConnected = await _isConnected();
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      setState(() {
-        formData = data[school] ?? {};
-      });
-      // Store fetched data locally
-      await LocalDatabaseHelper().insertFormData(
-          tourId, school, selectedFormLabel, formData);
+    if (isConnected) {
+      // Fetch data from the API when online
+      final url =
+          'https://mis.17000ft.org/apis/fast_apis/pre-fill-data.php?id=$tourId';
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print("Data fetched from API: ${data[school]}");
+
+        // Ensure that data is not null before storing
+        if (data[school] != null) {
+          setState(() {
+            formData = data[school];
+          });
+
+          // Store fetched data in SQLite for offline access
+          await saveFormDataToLocalDB(tourId, school, formData);
+        } else {
+          print("No data found for the given school in API response.");
+        }
+      } else {
+        print("Error fetching data from API: ${response.statusCode}");
+      }
     } else {
-      print('Failed to fetch data');
-    }
-  }
-
-  Future<void> loadLocalData() async {
-    List<Map<String, dynamic>> storedData = await LocalDatabaseHelper()
-        .getAllFormData();
-
-    if (storedData.isNotEmpty) {
-      final lastData = storedData.last;
-
-      // Ensure the dropdown selections are reset, and user has to reselect
+      print("Device is offline. Fetching data from SQLite...");
+      Map<String, dynamic> offlineData =
+      await getFormDataFromLocalDB(tourId, school);
       setState(() {
-        editController.setTour(null); // Reset tour selection
-        editController.setSchool(null); // Reset school selection
-        formData = {}; // Clear the form data
-        selectedSchool = ''; // Reset selected school
-        selectedFormLabel = ''; // Clear the form label so "Select Form" appears
+        formData = offlineData.isNotEmpty ? offlineData : {};
       });
+      print("Fetched data from SQLite: $offlineData");
     }
   }
+
+  Future<void> saveFormDataToLocalDB(
+      String tourId, String school, Map<String, dynamic> formData) async {
+    try {
+      print(
+          "Saving data to local SQLite database for tourId: $tourId, school: $school");
+      await dbHelper.insertFormData(tourId, school, formData);
+      print("Data saved successfully.");
+    } catch (e) {
+      print("Error saving data to SQLite: $e");
+    }
+  }
+
+  Future<Map<String, dynamic>> getFormDataFromLocalDB(
+      String tourId, String school) async {
+    // Use the database helper to get the data from SQLite
+    return await SqfliteDatabaseHelper.instance.getFormData(tourId, school);
+  }
+
   @override
   Widget build(BuildContext context) {
     final responsive = Responsive(context);
@@ -106,21 +151,18 @@ class _EditFormPageState extends State<EditFormPage> {
             no: 'No',
             onPressed: () {
               setState(() {
-                formData = {};  // Reset form data
-                selectedSchool = '';  // Reset school selection
-                selectedFormLabel = '';  // Reset form label to empty or null
-                editController.setSchool(null);  // Reset school
-                editController.setTour(null);    // Reset tour
+                formData = {}; // Reset form data
+                selectedSchool = ''; // Reset school selection
+                selectedFormLabel = ''; // Reset form label to empty or null
+                editController.setSchool(null); // Reset school
+                editController.setTour(null); // Reset tour
               });
               Navigator.of(context).pop(true);
             },
           ),
         );
         return shouldExit;
-      }
-      ,
-
-
+      },
       child: Scaffold(
         appBar: const CustomAppbar(
           title: 'Edit Form',
@@ -134,7 +176,8 @@ class _EditFormPageState extends State<EditFormPage> {
                 GetBuilder<TourController>(
                   init: TourController(),
                   builder: (tourController) {
-                    tourController.fetchTourDetails();  // Fetch tour details initially
+                    tourController
+                        .fetchTourDetails(); // Fetch tour details initially
                     return Form(
                       key: _formKey,
                       child: Column(
@@ -144,18 +187,22 @@ class _EditFormPageState extends State<EditFormPage> {
                           CustomDropdownFormField(
                             focusNode: editController.tourIdFocusNode,
                             options: tourController.getLocalTourList
-                                .map((e) => e.tourId!)
+                                .map((e) =>
+                            e.tourId!) // Ensure tourId is non-nullable
                                 .toList(),
                             selectedOption: editController.tourValue,
                             onChanged: (value) {
-                              // Clear form data when a new tour is selected
+                              // Safely handle the school list splitting by commas
+                              splitSchoolLists = tourController.getLocalTourList
+                                  .where((e) => e.tourId == value)
+                                  .map((e) => e.allSchool!
+                                  .split(',')
+                                  .map((s) => s.trim())
+                                  .toList())
+                                  .expand((x) => x)
+                                  .toList();
+                              // Single setState call for efficiency
                               setState(() {
-                                formData = {};  // Reset form data
-                                splitSchoolLists = tourController.getLocalTourList
-                                    .where((e) => e.tourId == value)
-                                    .map((e) => e.allSchool!.split('|').toList())
-                                    .expand((x) => x)
-                                    .toList();
                                 editController.setSchool(null);
                                 editController.setTour(value);
                               });
@@ -163,7 +210,6 @@ class _EditFormPageState extends State<EditFormPage> {
                             labelText: "Select Tour ID",
                           ),
                           CustomSizedBox(value: 20, side: 'height'),
-
                           // School Selection
                           LabelText(label: 'School', astrick: true),
                           CustomSizedBox(value: 20, side: 'height'),
@@ -178,10 +224,12 @@ class _EditFormPageState extends State<EditFormPage> {
                               showSelectedItems: true,
                               showSearchBox: true,
                               scrollbarProps: ScrollbarProps(
-                                thickness: 2,  // Thickness of the scrollbar
-                                radius: Radius.circular(10),  // Rounded scrollbar corners
-                                thumbColor: Colors.black87,  // Correct type
-                                thumbVisibility: true,  // Make the scrollbar visible while scrolling
+                                thickness: 2, // Thickness of the scrollbar
+                                radius: Radius.circular(
+                                    10), // Rounded scrollbar corners
+                                thumbColor: Colors.black87, // Correct type
+                                thumbVisibility:
+                                true, // Make the scrollbar visible while scrolling
                               ),
                               searchFieldProps: TextFieldProps(
                                 decoration: InputDecoration(
@@ -193,7 +241,7 @@ class _EditFormPageState extends State<EditFormPage> {
                                 ),
                               ),
                             ),
-                            items: splitSchoolLists,  // List of schools
+                            items: splitSchoolLists, // List of schools
                             dropdownDecoratorProps: DropDownDecoratorProps(
                               dropdownSearchDecoration: InputDecoration(
                                 labelText: "Select School",
@@ -212,20 +260,21 @@ class _EditFormPageState extends State<EditFormPage> {
                                 setState(() {
                                   selectedSchool = value;
                                   editController.setSchool(value);
-                                  fetchData(editController.tourValue!, value);  // Ensure tourValue is non-null
+                                  fetchData(editController.tourValue!,
+                                      value); // Ensure tourValue is non-null
                                 });
                               }
                             },
                             selectedItem: editController.schoolValue,
                           ),
-
                           CustomSizedBox(value: 20, side: 'height'),
-
                           // Dropdown for form labels
                           LabelText(label: 'Select Form'),
                           CustomSizedBox(value: 20, side: 'height'),
                           DropdownButtonFormField<String>(
-                            value: selectedFormLabel.isEmpty ? null : selectedFormLabel,  // Show "Select Form" when empty
+                            value: selectedFormLabel.isEmpty
+                                ? null
+                                : selectedFormLabel, // Show "Select Form" when empty
                             items: ['enrollment', 'vec', 'facilities']
                                 .map((label) => DropdownMenuItem(
                               value: label,
@@ -234,31 +283,25 @@ class _EditFormPageState extends State<EditFormPage> {
                                 .toList(),
                             onChanged: (value) {
                               setState(() {
-                                selectedFormLabel = value ?? '';  // Update selected form label
+                                selectedFormLabel =
+                                    value ?? ''; // Update selected form label
                               });
                             },
                             decoration: InputDecoration(
-                              labelText: 'Select Form',  // Set placeholder as "Select Form"
+                              labelText:
+                              'Select Form', // Set placeholder as "Select Form"
                               border: OutlineInputBorder(),
                             ),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return "Please select a form";  // Add validation to ensure selection
+                                return "Please select a form"; // Add validation to ensure selection
                               }
                               return null;
                             },
                           ),
-
-
                           CustomSizedBox(value: 20, side: 'height'),
-
-                          // Display fetched form data if available
-    // Display fetched form data only if both tour, school, and form label are selected
-    if (formData.isNotEmpty && editController.tourValue != null && selectedSchool.isNotEmpty)
-    buildFormDataWidget(selectedFormLabel),
-
-    // if (formData.isEmpty)
-                          //   Text("No form data available for the selected tour and school."),
+                          if (formData.isNotEmpty && selectedSchool.isNotEmpty)
+                            buildFormDataWidget(selectedFormLabel),
                         ],
                       ),
                     );
@@ -273,43 +316,51 @@ class _EditFormPageState extends State<EditFormPage> {
   }
 
 
-
 // Function to build widget to display form data in a single card horizontally
   Widget buildFormDataWidget(String label) {
+
+    // Check for offline mode as well as presence of formData before trying to render the widget
+    if (formData.isEmpty && selectedSchool.isNotEmpty) {
+      return const Text('No data available for the selected school and form.');
+    }
     switch (label) {
       case 'enrollment':
         if (formData.containsKey('enrollment')) {
           final enrollmentFetch = formData['enrollment'];
 
           if (enrollmentFetch is Map) {
-            List<Widget> classWidgets = [];
+            List<Widget> classRows = [];
 
-            // Creating a horizontal layout for class data
+            // Add headers row
+            classRows.add(
+              Row(
+                children: const [
+                  Expanded(child: Text('Class', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
+                  Expanded(child: Text('Boys', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
+                  Expanded(child: Text('Girls', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
+                ],
+              ),
+            );
+
+            // Adding class data rows
             enrollmentFetch.forEach((className, data) {
               if (data is Map && data.containsKey('boys') && data.containsKey('girls')) {
-                final boys = int.tryParse(data['boys'] ?? '0') ?? 0; // Convert to int, default to 0 if parsing fails
-                final girls = int.tryParse(data['girls'] ?? '0') ?? 0; // Convert to int, default to 0 if parsing fails
-                classWidgets.add(
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                final boys = int.tryParse(data['boys'] ?? '0') ?? 0;
+                final girls = int.tryParse(data['girls'] ?? '0') ?? 0;
+
+                classRows.add(
+                  Row(
                     children: [
-                      Text(
-                        className,
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      SizedBox(height: 4),
-                      Text('Boys: $boys'),
-                      Text('Girls: $girls'),
-                      SizedBox(height: 16), // Spacing between classes
+                      Expanded(child: Text(className, style: const TextStyle(fontSize: 14))),
+                      Expanded(child: Text('$boys', style: const TextStyle(fontSize: 14))),
+                      Expanded(child: Text('$girls', style: const TextStyle(fontSize: 14))),
                     ],
                   ),
                 );
               }
             });
 
-
-
-            // Display the enrollment data in a card if available
+            // Display the enrollment data in a card with headers
             return Card(
               elevation: 4,
               margin: const EdgeInsets.symmetric(vertical: 8.0),
@@ -318,19 +369,12 @@ class _EditFormPageState extends State<EditFormPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: classWidgets.map((classWidget) {
-                        return Expanded(child: classWidget);
-                      }).toList(),
-                    ),
+                    Column(children: classRows), // Displaying the rows with class data
                     SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () {
-                        // Prepare the data in the correct format for SchoolEnrollmentForm
                         final enrolmentDataMap = <String, Map<String, String>>{};
 
-                        // Mapping the data to match the structure expected by SchoolEnrollmentForm
                         enrollmentFetch.forEach((className, data) {
                           if (data is Map && data.containsKey('boys') && data.containsKey('girls')) {
                             enrolmentDataMap[className] = {
@@ -340,18 +384,16 @@ class _EditFormPageState extends State<EditFormPage> {
                           }
                         });
 
-                        // Navigate to SchoolEnrollmentForm with the mapped data
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => SchoolEnrollmentForm(
                               userid: 'userid',
                               existingRecord: EnrolmentCollectionModel(
-                                enrolmentData: jsonEncode(enrolmentDataMap), // Pass the enrollment data as JSON
+                                enrolmentData: jsonEncode(enrolmentDataMap),
                                 remarks: enrollmentFetch['remarks'] ?? '',
                                 // tourId: enrollmentFetch['tourId'] ?? '',
                                 school: enrollmentFetch['school'] ?? '',
-                                submittedBy: enrollmentFetch['submittedBy'] ?? '',
                               ),
                             ),
                           ),
@@ -367,7 +409,6 @@ class _EditFormPageState extends State<EditFormPage> {
             return const Text('Enrollment data format is incorrect');
           }
         } else {
-          // Show card with 'No enrollment data' message and add new button if no data is available
           return Card(
             elevation: 4,
             margin: const EdgeInsets.symmetric(vertical: 8.0),
@@ -380,13 +421,10 @@ class _EditFormPageState extends State<EditFormPage> {
                   SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
-                      // Navigate to add new enrollment data form
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => SchoolEnrollmentForm(
-
-                          ),
+                          builder: (context) => SchoolEnrollmentForm(),
                         ),
                       );
                     },
@@ -397,7 +435,6 @@ class _EditFormPageState extends State<EditFormPage> {
             ),
           );
         }
-
 
       case 'vec':
         if (formData.containsKey('vec') && formData['vec'] != null && formData['vec'].isNotEmpty) {
@@ -424,7 +461,8 @@ class _EditFormPageState extends State<EditFormPage> {
 
                             existingRecord: SchoolStaffVecRecords(
                               headName: vec['headName'],
-                              // tourId: vec['tourId'],
+                              tourId: vec['tourId'],
+                              school: vec['school'],
                               headGender: vec['headGender'],
                               udiseValue: vec['udiseValue'],
                               correctUdise: vec['correctUdise'],
@@ -526,7 +564,7 @@ class _EditFormPageState extends State<EditFormPage> {
 
                             existingRecord: SchoolFacilitiesRecords(
                               residentialValue: facility['residentialValue'],
-                              // tourId: facility['tourId'],
+                              tourId: facility['tourId'],
                               electricityValue: facility['electricityValue'],
                               internetValue: facility['internetValue'],
                               udiseCode: facility['udiseValue'],

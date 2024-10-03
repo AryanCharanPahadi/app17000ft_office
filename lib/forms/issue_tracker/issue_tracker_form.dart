@@ -1187,9 +1187,12 @@ class _IssueTrackerFormState extends State<IssueTrackerForm> {
                             child: GetBuilder<TourController>(
                                 init: TourController(),
                                 builder: (tourController) {
-                                  tourController.fetchTourDetails();
+                                  // Fetch tour details once, not on every rebuild.
+                                  if (tourController.getLocalTourList.isEmpty) {
+                                    tourController.fetchTourDetails();
+                                  }
+
                                   return Column(children: [
-                                    // Start of basic details
                                     if (showBasicDetails) ...[
                                       LabelText(
                                         label: 'Basic Details',
@@ -1207,27 +1210,24 @@ class _IssueTrackerFormState extends State<IssueTrackerForm> {
                                         side: 'height',
                                       ),
                                       CustomDropdownFormField(
-                                        focusNode: issueTrackerController
-                                            .tourIdFocusNode,
+                                        focusNode: issueTrackerController.tourIdFocusNode,
                                         options: tourController.getLocalTourList
-                                            .map((e) => e.tourId!)
+                                            .map((e) => e.tourId!) // Ensure tourId is non-nullable
                                             .toList(),
-                                        selectedOption:
-                                            issueTrackerController.tourValue,
+                                        selectedOption: issueTrackerController.tourValue,
                                         onChanged: (value) {
+                                          // Safely handle the school list splitting by commas
                                           splitSchoolLists = tourController
                                               .getLocalTourList
                                               .where((e) => e.tourId == value)
-                                              .map((e) => e.allSchool!
-                                                  .split('|')
-                                                  .toList())
+                                              .map((e) => e.allSchool!.split(',').map((s) => s.trim()).toList())
                                               .expand((x) => x)
                                               .toList();
+
+                                          // Single setState call for efficiency
                                           setState(() {
-                                            issueTrackerController
-                                                .setSchool(null);
-                                            issueTrackerController
-                                                .setTour(value);
+                                            issueTrackerController.setSchool(null);
+                                            issueTrackerController.setTour(value);
                                           });
                                         },
                                         labelText: "Select Tour ID",
@@ -1244,6 +1244,7 @@ class _IssueTrackerFormState extends State<IssueTrackerForm> {
                                         value: 20,
                                         side: 'height',
                                       ),
+                                      // DropdownSearch for selecting a single school
                                       DropdownSearch<String>(
                                         validator: (value) {
                                           if (value == null || value.isEmpty) {
@@ -1254,26 +1255,22 @@ class _IssueTrackerFormState extends State<IssueTrackerForm> {
                                         popupProps: PopupProps.menu(
                                           showSelectedItems: true,
                                           showSearchBox: true,
-                                          disabledItemFn: (String s) =>
-                                              s.startsWith('I'),
+                                          disabledItemFn: (String s) => s.startsWith('I'), // Disable based on condition
                                         ),
-                                        items: splitSchoolLists,
-                                        dropdownDecoratorProps:
-                                            const DropDownDecoratorProps(
-                                          dropdownSearchDecoration:
-                                              InputDecoration(
+                                        items: splitSchoolLists, // Split school list as strings
+                                        dropdownDecoratorProps: const DropDownDecoratorProps(
+                                          dropdownSearchDecoration: InputDecoration(
                                             labelText: "Select School",
-                                            hintText: "Select School ",
+                                            hintText: "Select School",
                                           ),
                                         ),
                                         onChanged: (value) {
+                                          // Set the selected school
                                           setState(() {
-                                            issueTrackerController
-                                                .setSchool(value);
+                                            issueTrackerController.setSchool(value);
                                           });
                                         },
-                                        selectedItem:
-                                            issueTrackerController.schoolValue,
+                                        selectedItem: issueTrackerController.schoolValue,
                                       ),
                                       CustomSizedBox(
                                         value: 20,

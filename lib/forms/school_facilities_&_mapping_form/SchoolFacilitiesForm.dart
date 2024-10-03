@@ -183,101 +183,91 @@ class _SchoolFacilitiesFormState extends State<SchoolFacilitiesForm> {
                                 child: GetBuilder<TourController>(
                                     init: TourController(),
                                     builder: (tourController) {
-                                      tourController.fetchTourDetails();
-                                      return Column(
-                                        children: [
-                                          if (showBasicDetails) ...[
-                                            LabelText(
-                                              label: 'Basic Details',
-                                            ),
-                                            CustomSizedBox(
-                                              value: 20,
-                                              side: 'height',
-                                            ),
-                                            LabelText(
-                                              label: 'Tour ID',
-                                              astrick: true,
-                                            ),
-                                            CustomSizedBox(
-                                              value: 20,
-                                              side: 'height',
-                                            ),
-                                            CustomDropdownFormField(
-                                              focusNode:
-                                                  schoolFacilitiesController
-                                                      .tourIdFocusNode,
-                                              options: tourController
+                                      // Fetch tour details once, not on every rebuild.
+                                      if (tourController.getLocalTourList.isEmpty) {
+                                        tourController.fetchTourDetails();
+                                      }
+
+                                      return Column(children: [
+                                        if (showBasicDetails) ...[
+                                          LabelText(
+                                            label: 'Basic Details',
+                                          ),
+                                          CustomSizedBox(
+                                            value: 20,
+                                            side: 'height',
+                                          ),
+                                          LabelText(
+                                            label: 'Tour ID',
+                                            astrick: true,
+                                          ),
+                                          CustomSizedBox(
+                                            value: 20,
+                                            side: 'height',
+                                          ),
+                                          CustomDropdownFormField(
+                                            focusNode: schoolFacilitiesController.tourIdFocusNode,
+                                            options: tourController.getLocalTourList
+                                                .map((e) => e.tourId!) // Ensure tourId is non-nullable
+                                                .toList(),
+                                            selectedOption: schoolFacilitiesController.tourValue,
+                                            onChanged: (value) {
+                                              // Safely handle the school list splitting by commas
+                                              splitSchoolLists = tourController
                                                   .getLocalTourList
-                                                  .map((e) => e.tourId!)
-                                                  .toList(),
-                                              selectedOption:
-                                                  schoolFacilitiesController
-                                                      .tourValue,
-                                              onChanged: (value) {
-                                                splitSchoolLists =
-                                                    tourController
-                                                        .getLocalTourList
-                                                        .where((e) =>
-                                                            e.tourId == value)
-                                                        .map((e) => e.allSchool!
-                                                            .split('|')
-                                                            .toList())
-                                                        .expand((x) => x)
-                                                        .toList();
-                                                setState(() {
-                                                  schoolFacilitiesController
-                                                      .setSchool(null);
-                                                  schoolFacilitiesController
-                                                      .setTour(value);
-                                                });
-                                              },
-                                              labelText: "Select Tour ID",
+                                                  .where((e) => e.tourId == value)
+                                                  .map((e) => e.allSchool!.split(',').map((s) => s.trim()).toList())
+                                                  .expand((x) => x)
+                                                  .toList();
+
+                                              // Single setState call for efficiency
+                                              setState(() {
+                                                schoolFacilitiesController.setSchool(null);
+                                                schoolFacilitiesController.setTour(value);
+                                              });
+                                            },
+                                            labelText: "Select Tour ID",
+                                          ),
+                                          CustomSizedBox(
+                                            value: 20,
+                                            side: 'height',
+                                          ),
+                                          LabelText(
+                                            label: 'School',
+                                            astrick: true,
+                                          ),
+                                          CustomSizedBox(
+                                            value: 20,
+                                            side: 'height',
+                                          ),
+                                          // DropdownSearch for selecting a single school
+                                          DropdownSearch<String>(
+                                            validator: (value) {
+                                              if (value == null || value.isEmpty) {
+                                                return "Please Select School";
+                                              }
+                                              return null;
+                                            },
+                                            popupProps: PopupProps.menu(
+                                              showSelectedItems: true,
+                                              showSearchBox: true,
+                                              disabledItemFn: (String s) => s.startsWith('I'), // Disable based on condition
                                             ),
-                                            CustomSizedBox(
-                                              value: 20,
-                                              side: 'height',
-                                            ),
-                                            LabelText(
-                                              label: 'School',
-                                              astrick: true,
-                                            ),
-                                            CustomSizedBox(
-                                              value: 20,
-                                              side: 'height',
-                                            ),
-                                            DropdownSearch<String>(
-                                              validator: (value) {
-                                                if (value == null ||
-                                                    value.isEmpty) {
-                                                  return "Please Select School";
-                                                }
-                                                return null;
-                                              },
-                                              popupProps: PopupProps.menu(
-                                                showSelectedItems: true,
-                                                showSearchBox: true,
-                                                disabledItemFn: (String s) =>
-                                                    s.startsWith('I'),
+                                            items: splitSchoolLists, // Split school list as strings
+                                            dropdownDecoratorProps: const DropDownDecoratorProps(
+                                              dropdownSearchDecoration: InputDecoration(
+                                                labelText: "Select School",
+                                                hintText: "Select School",
                                               ),
-                                              items: splitSchoolLists,
-                                              dropdownDecoratorProps:
-                                                  const DropDownDecoratorProps(
-                                                dropdownSearchDecoration:
-                                                    InputDecoration(
-                                                  labelText: "Select School",
-                                                  hintText: "Select School ",
-                                                ),
-                                              ),
-                                              onChanged: (value) {
-                                                setState(() {
-                                                  schoolFacilitiesController
-                                                      .setSchool(value);
-                                                });
-                                              },
-                                              selectedItem:
-                                                  schoolFacilitiesController
-                                                      .schoolValue,
                                             ),
+                                            onChanged: (value) {
+                                              // Set the selected school
+                                              setState(() {
+                                                schoolFacilitiesController.setSchool(value);
+                                              });
+                                            },
+                                            selectedItem: schoolFacilitiesController.schoolValue,
+                                          ),
                                             CustomSizedBox(
                                               value: 20,
                                               side: 'height',

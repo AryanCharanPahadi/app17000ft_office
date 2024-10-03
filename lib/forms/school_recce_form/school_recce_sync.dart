@@ -83,7 +83,7 @@ class _SchoolRecceSyncState extends State<SchoolRecceSync> {
                   Text(
                     'Syncing: ${(syncProgress.value * 100).toStringAsFixed(0)}%',
                     style: const TextStyle(
-                        fontSize: 24, fontWeight: FontWeight.bold),
+                        fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   if (hasError.value)
                     const Text(

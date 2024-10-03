@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../base_client/baseClient_controller.dart';
+import '../../helper/database_helper.dart';
+import 'edit_modal.dart';
 
 class EditController extends GetxController with BaseController {
   var counterText = ''.obs;
+
+
 
   String? _tourValue;
   String? get tourValue => _tourValue;
@@ -23,6 +27,16 @@ class EditController extends GetxController with BaseController {
 
   void setTour(String? value) {
     _tourValue = value;
+  }
+
+  fetchTourDetails() async {
+
+
+
+
+
+
+    update();
   }
 
 }

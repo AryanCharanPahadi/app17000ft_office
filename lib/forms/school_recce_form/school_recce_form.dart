@@ -1013,15 +1013,19 @@ class _SchoolRecceFormState extends State<SchoolRecceForm> {
                           builder: (schoolRecceController) {
                             return Form(
                                 key: _formKey,
-                                child: GetBuilder<TourController>(
+                                child:GetBuilder<TourController>(
                                     init: TourController(),
                                     builder: (tourController) {
-                                      tourController.fetchTourDetails();
+                                      // Fetch tour details once, not on every rebuild.
+                                      if (tourController.getLocalTourList.isEmpty) {
+                                        tourController.fetchTourDetails();
+                                      }
+
                                       return Column(children: [
-                                        //show Basic Details
-                                        if (schoolRecceController
-                                            .showBasicDetails) ...[
-                                          LabelText(label: 'Basic Details'),
+                                        if (schoolRecceController.showBasicDetails) ...[
+                                          LabelText(
+                                            label: 'Basic Details',
+                                          ),
                                           CustomSizedBox(
                                             value: 20,
                                             side: 'height',
@@ -1035,35 +1039,28 @@ class _SchoolRecceFormState extends State<SchoolRecceForm> {
                                             side: 'height',
                                           ),
                                           CustomDropdownFormField(
-                                              focusNode: schoolRecceController
-                                                  .tourIdFocusNode,
-                                              options: tourController
+                                            focusNode: schoolRecceController.tourIdFocusNode,
+                                            options: tourController.getLocalTourList
+                                                .map((e) => e.tourId!) // Ensure tourId is non-nullable
+                                                .toList(),
+                                            selectedOption: schoolRecceController.tourValue,
+                                            onChanged: (value) {
+                                              // Safely handle the school list splitting by commas
+                                              schoolRecceController.splitSchoolLists = tourController
                                                   .getLocalTourList
-                                                  .map((e) => e.tourId!)
-                                                  .toList(),
-                                              selectedOption:
-                                                  schoolRecceController
-                                                      .tourValue,
-                                              onChanged: (value) {
-                                                schoolRecceController
-                                                        .splitSchoolLists =
-                                                    tourController
-                                                        .getLocalTourList
-                                                        .where((e) =>
-                                                            e.tourId == value)
-                                                        .map((e) => e.allSchool!
-                                                            .split('|')
-                                                            .toList())
-                                                        .expand((x) => x)
-                                                        .toList();
-                                                setState(() {
-                                                  schoolRecceController
-                                                      .setSchool(null);
-                                                  schoolRecceController
-                                                      .setTour(value);
-                                                });
-                                              },
-                                              labelText: "Select Tour ID"),
+                                                  .where((e) => e.tourId == value)
+                                                  .map((e) => e.allSchool!.split(',').map((s) => s.trim()).toList())
+                                                  .expand((x) => x)
+                                                  .toList();
+
+                                              // Single setState call for efficiency
+                                              setState(() {
+                                                schoolRecceController.setSchool(null);
+                                                schoolRecceController.setTour(value);
+                                              });
+                                            },
+                                            labelText: "Select Tour ID",
+                                          ),
                                           CustomSizedBox(
                                             value: 20,
                                             side: 'height',
@@ -1076,10 +1073,10 @@ class _SchoolRecceFormState extends State<SchoolRecceForm> {
                                             value: 20,
                                             side: 'height',
                                           ),
+                                          // DropdownSearch for selecting a single school
                                           DropdownSearch<String>(
                                             validator: (value) {
-                                              if (value == null ||
-                                                  value.isEmpty) {
+                                              if (value == null || value.isEmpty) {
                                                 return "Please Select School";
                                               }
                                               return null;
@@ -1087,27 +1084,22 @@ class _SchoolRecceFormState extends State<SchoolRecceForm> {
                                             popupProps: PopupProps.menu(
                                               showSelectedItems: true,
                                               showSearchBox: true,
-                                              disabledItemFn: (String s) =>
-                                                  s.startsWith('I'),
+                                              disabledItemFn: (String s) => s.startsWith('I'), // Disable based on condition
                                             ),
-                                            items: schoolRecceController
-                                                .splitSchoolLists,
-                                            dropdownDecoratorProps:
-                                                const DropDownDecoratorProps(
-                                              dropdownSearchDecoration:
-                                                  InputDecoration(
+                                            items: schoolRecceController.splitSchoolLists, // Split school list as strings
+                                            dropdownDecoratorProps: const DropDownDecoratorProps(
+                                              dropdownSearchDecoration: InputDecoration(
                                                 labelText: "Select School",
-                                                hintText: "Select School ",
+                                                hintText: "Select School",
                                               ),
                                             ),
                                             onChanged: (value) {
+                                              // Set the selected school
                                               setState(() {
-                                                schoolRecceController
-                                                    .setSchool(value);
+                                                schoolRecceController.setSchool(value);
                                               });
                                             },
-                                            selectedItem: schoolRecceController
-                                                .schoolValue,
+                                            selectedItem: schoolRecceController.schoolValue,
                                           ),
                                           CustomSizedBox(
                                             value: 20,

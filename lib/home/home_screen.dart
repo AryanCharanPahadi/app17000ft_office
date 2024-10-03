@@ -68,7 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: Text(
-            'Home',
+              'Home',
               style: AppStyles.appBarTitle(context, AppColors.onPrimary)
           ),
           backgroundColor: AppColors.primary,
@@ -251,3 +251,4 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 }
+
