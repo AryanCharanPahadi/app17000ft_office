@@ -31,7 +31,7 @@ final NetworkManager networkManager = Get.put(NetworkManager());
 class SqfliteDatabaseHelper {
   SqfliteDatabaseHelper.internal();
   static final SqfliteDatabaseHelper instance =
-  SqfliteDatabaseHelper.internal();
+      SqfliteDatabaseHelper.internal();
   factory SqfliteDatabaseHelper() => instance;
 
   // Name of the tables
@@ -54,7 +54,7 @@ class SqfliteDatabaseHelper {
   static const inPerson_qualitative = 'inPerson_qualitative';
   static const schoolRecce = 'schoolRecce';
   static const _dbName = "app17000ft_new.db";
-  static const _dbVersion = 56; // Increment this when you make schema changes
+  static const _dbVersion = 57; // Increment this when you make schema changes
 
   static Database? _db;
 
@@ -70,7 +70,7 @@ class SqfliteDatabaseHelper {
   // Perform tasks
   Future<Database> init() async {
     var dbPath = await getDatabasesPath();
-    print('Database path: $dbPath');  // Add this log to check path on the device
+    print('Database path: $dbPath'); // Add this log to check path on the device
     String dbPathHomeWorkout = path.join(dbPath, _dbName);
 
     bool dbExists = await io.File(dbPathHomeWorkout).exists();
@@ -78,7 +78,7 @@ class SqfliteDatabaseHelper {
     if (!dbExists) {
       ByteData data = await rootBundle.load(path.join("assets/", _dbName));
       List<int> bytes =
-      data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+          data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
       await io.File(dbPathHomeWorkout).writeAsBytes(bytes, flush: true);
     }
     return await openDatabase(
@@ -97,8 +97,8 @@ class SqfliteDatabaseHelper {
   void _onUpgrade(Database db, int oldVersion, int newVersion) async {
     print('onUpgrade is called from $oldVersion to $newVersion');
     if (oldVersion < newVersion) {
-      if (oldVersion == 55 && newVersion == 56) {
-        print("upgrade");
+      if (oldVersion == 56 && newVersion == 57) {
+        print("upgrading database schema");
         await _createTables(db);
       }
       // Add more migration steps if needed for future versions
@@ -336,7 +336,6 @@ otherQual TEXT
       unique_id TEXT
     );
   ''');
-
 
     await db.execute('''
     CREATE TABLE IF NOT EXISTS $furniture_issue(
@@ -578,8 +577,6 @@ otherQual TEXT
      
     );
   ''');
-
-
   }
 
   // Function to reset the database
@@ -589,8 +586,10 @@ otherQual TEXT
     await deleteDatabase(dbPathHomeWorkout);
     _db = await init();
   }
-// Method to insert form data into the database
-  Future<void> insertFormData(String tourId, String school, Map<String, dynamic> data) async {
+
+  // Method to insert form data into the database
+  Future<void> insertFormData(
+      String tourId, String school, Map<String, dynamic> data) async {
     final dbClient = await instance.db;
 
     try {
@@ -599,7 +598,7 @@ otherQual TEXT
 
       // Insert the data, replacing existing entries for the same tourId and school
       int result = await dbClient.insert(
-        'formDataTable',
+        formDataTable,
         {
           'tourId': tourId,
           'school': school,
@@ -609,13 +608,13 @@ otherQual TEXT
       );
 
       // Debugging output
-      print("Data inserted for tourId: $tourId, school: $school, result: $result");
+      print(
+          "Data inserted for tourId: $tourId, school: $school, result: $result");
       print("Inserted data: $jsonData");
     } catch (e) {
       print("Error inserting data into SQLite: $e");
     }
   }
-
 
   // Method to retrieve form data from the database for a given tourId and school
   Future<Map<String, dynamic>> getFormData(String tourId, String school) async {
@@ -623,7 +622,7 @@ otherQual TEXT
 
     // Query the database to get data for the provided tourId and school
     List<Map<String, dynamic>> result = await dbClient.query(
-      'formDataTable',
+      formDataTable, // Ensure this matches the defined table name
       where: 'tourId = ? AND school = ?',
       whereArgs: [tourId, school],
     );
@@ -641,19 +640,24 @@ otherQual TEXT
     return {};
   }
 
-
-  // Method to delete form data (optional, if needed for cleanup)
-  Future<void> deleteFormData(String tourId, String school) async {
+  // Retrieve distinct schools for a specific tourId
+  Future<List<String>> getSchoolsForTourId(String tourId) async {
     final dbClient = await instance.db;
 
-    await dbClient.delete(
-      'formDataTable',
-      where: 'tourId = ? AND school = ?',
-      whereArgs: [tourId, school],
+    // Query the database to get all distinct schools for the given tourId
+    final List<Map<String, dynamic>> result = await dbClient.query(
+      formDataTable, // Ensure this matches the defined table name
+      columns: ['school'],
+      where: 'tourId = ?',
+      whereArgs: [tourId],
+      distinct: true,
     );
+
+    // Extract the school names into a list
+    List<String> schoolList = result.map((row) => row['school'] as String).toList();
+
+    return schoolList;
   }
-
-
   // Delete function for deleting records from table
   Future<int> delete(String? tableName,
       {String? where, List<dynamic>? whereArgs}) async {
@@ -720,7 +724,8 @@ class LocalDbController {
     SchoolStaffVecRecords? schoolStaffVecRecords,
     IssueTrackerRecords? issueTrackerRecords,
     List<LibIssue>? libIssues, // Accept a list of LibIssue objects
-    List<PlaygroundIssue>? playgroundIssues, // Accept a list of LibIssue objects
+    List<PlaygroundIssue>?
+        playgroundIssues, // Accept a list of LibIssue objects
     List<FurnitureIssue>? furnitureIssues, // Accept a list of LibIssue objects
     List<DigiLabIssue>? digiLabIssues, // Accept a list of LibIssue objects
     List<AlexaIssue>? alexaIssues, // Accept a list of LibIssue objects
@@ -741,9 +746,6 @@ class LocalDbController {
           tourDetails.toJson(),
         );
       }
-
-
-
 
       // Insert EnrolmentCollectionModel
       if (enrolmentCollectionModel != null) {
@@ -806,14 +808,15 @@ class LocalDbController {
         if (issueResult <= 0) result = 0; // Indicate failure
       }
 
-
 // Library issue
       if (libIssues != null && libIssues.isNotEmpty) {
-        print('Inserting libIssues: ${libIssues.map((issue) => issue.toJson()).toList()}');
+        print(
+            'Inserting libIssues: ${libIssues.map((issue) => issue.toJson()).toList()}');
         for (var issue in libIssues) {
           print('Inserting library issue: ${issue.toJson()}');
           await dbClient.insert(
-            SqfliteDatabaseHelper.libIssueTable, // Adjust this table name accordingly
+            SqfliteDatabaseHelper
+                .libIssueTable, // Adjust this table name accordingly
             issue.toJson(),
           );
         }
@@ -821,11 +824,13 @@ class LocalDbController {
 
 // Playground issue
       if (playgroundIssues != null && playgroundIssues.isNotEmpty) {
-        print('Inserting playgroundIssues: ${playgroundIssues.map((issue) => issue.toJson()).toList()}');
+        print(
+            'Inserting playgroundIssues: ${playgroundIssues.map((issue) => issue.toJson()).toList()}');
         for (var issue in playgroundIssues) {
           print('Inserting playground issue: ${issue.toJson()}');
           await dbClient.insert(
-            SqfliteDatabaseHelper.play_issue, // Adjust this table name accordingly
+            SqfliteDatabaseHelper
+                .play_issue, // Adjust this table name accordingly
             issue.toJson(),
           );
         }
@@ -833,11 +838,13 @@ class LocalDbController {
 
 // Alexa issue
       if (alexaIssues != null && alexaIssues.isNotEmpty) {
-        print('Inserting alexaIssues: ${alexaIssues.map((issue) => issue.toJson()).toList()}');
+        print(
+            'Inserting alexaIssues: ${alexaIssues.map((issue) => issue.toJson()).toList()}');
         for (var issue in alexaIssues) {
           print('Inserting alexa issue: ${issue.toJson()}');
           await dbClient.insert(
-            SqfliteDatabaseHelper.alexa_issue, // Adjust this table name accordingly
+            SqfliteDatabaseHelper
+                .alexa_issue, // Adjust this table name accordingly
             issue.toJson(),
           );
         }
@@ -845,11 +852,13 @@ class LocalDbController {
 
 // DigiLab issue
       if (digiLabIssues != null && digiLabIssues.isNotEmpty) {
-        print('Inserting digiLabIssues: ${digiLabIssues.map((issue) => issue.toJson()).toList()}');
+        print(
+            'Inserting digiLabIssues: ${digiLabIssues.map((issue) => issue.toJson()).toList()}');
         for (var issue in digiLabIssues) {
           print('Inserting digiLab issue: ${issue.toJson()}');
           await dbClient.insert(
-            SqfliteDatabaseHelper.digiLab_issue, // Adjust this table name accordingly
+            SqfliteDatabaseHelper
+                .digiLab_issue, // Adjust this table name accordingly
             issue.toJson(),
           );
         }
@@ -857,16 +866,17 @@ class LocalDbController {
 
 // Furniture issue
       if (furnitureIssues != null && furnitureIssues.isNotEmpty) {
-        print('Inserting furnitureIssues: ${furnitureIssues.map((issue) => issue.toJson()).toList()}');
+        print(
+            'Inserting furnitureIssues: ${furnitureIssues.map((issue) => issue.toJson()).toList()}');
         for (var issue in furnitureIssues) {
           print('Inserting furniture issue: ${issue.toJson()}');
           await dbClient.insert(
-            SqfliteDatabaseHelper.furniture_issue, // Adjust this table name accordingly
+            SqfliteDatabaseHelper
+                .furniture_issue, // Adjust this table name accordingly
             issue.toJson(),
           );
         }
       }
-
 
       if (alfaObservationModel != null) {
         print('alfaObservationModel called to insert');
@@ -925,9 +935,6 @@ class LocalDbController {
     return tourList;
   }
 
-
-
-
   //fetch Local Enrolment DATa
 
   // Fetch CDPO form records from local db
@@ -965,7 +972,7 @@ class LocalDbController {
   }
 
   Future<List<InPersonQuantitativeRecords>>
-  fetchLocalInPersonQuantitativeRecords() async {
+      fetchLocalInPersonQuantitativeRecords() async {
     var dbClient = await conn.db;
     List<InPersonQuantitativeRecords> tourList = [];
     try {
@@ -983,7 +990,7 @@ class LocalDbController {
   }
 
   Future<List<SchoolFacilitiesRecords>>
-  fetchLocalSchoolFacilitiesRecords() async {
+      fetchLocalSchoolFacilitiesRecords() async {
     var dbClient = await conn.db;
     List<SchoolFacilitiesRecords> tourList = [];
     try {
@@ -1029,7 +1036,8 @@ class LocalDbController {
       }
       print('local Issue record length is ${tourList.length}');
     } catch (e) {
-      print("Exception occurred while fetching IssueTrackerRecords records: $e");
+      print(
+          "Exception occurred while fetching IssueTrackerRecords records: $e");
     }
     return tourList;
   }
@@ -1114,7 +1122,6 @@ class LocalDbController {
     return alexaIssueList;
   }
 
-
   Future<List<AlfaObservationModel>> fetchLocalAlfaObservationModel() async {
     var dbClient = await conn.db;
     List<AlfaObservationModel> tourList = [];
@@ -1150,7 +1157,7 @@ class LocalDbController {
   }
 
   Future<List<InPersonQualitativeRecords>>
-  fetchLocalInPersonQualitativeRecords() async {
+      fetchLocalInPersonQualitativeRecords() async {
     var dbClient = await conn.db;
     List<InPersonQualitativeRecords> tourList = [];
     try {

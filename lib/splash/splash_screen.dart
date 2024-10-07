@@ -98,7 +98,7 @@ class VersionText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      'Version 1.0',
+      'Version 3.4',
       style: TextStyle(
         color:AppColors.background,
         fontSize: responsive.responsiveTextSize(12, 14, 16),

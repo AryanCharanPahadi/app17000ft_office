@@ -31,12 +31,15 @@ import '../../home/home_screen.dart';
 class SchoolStaffVecForm extends StatefulWidget {
   String? userid;
   String? office;
+  String? tourId; // Add this line
+  String? school; // Add this line for school
   final SchoolStaffVecRecords? existingRecord;
   SchoolStaffVecForm({
     super.key,
     this.userid,
     String? office,
     this.existingRecord,
+    this.school,   this.tourId,
   });
   @override
   State<SchoolStaffVecForm> createState() => _SchoolStaffVecFormState();
@@ -45,32 +48,6 @@ class SchoolStaffVecForm extends StatefulWidget {
 class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
   final ScrollController _scrollController = ScrollController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-
-  List<String> splitSchoolLists = [];
-  String? _selectedDesignation;
-  String? selected2Designation;
-  String? _selected3Designation;
-  // Start of Showing Fields
-  bool showBasicDetails = true; // For show Basic Details
-  bool showStaffDetails = false; //For show and hide School Facilities
-  bool showSmcVecDetails = false; //For show and hide Library
-  // End of Showing Fields
-
-  // Start of selecting Field
-  String? _selectedValue = ''; // For the UDISE code
-  String? _selectedValue2 = ''; // For the Gender
-  String? _selectedValue3 = ''; // For the Gender2
-  // End of selecting Field error
-
-  // Start of radio Field
-  bool _radioFieldError = false; // For the UDISE code
-  bool _radioFieldError2 = false; // For the Gender
-  bool _radioFieldError3 = false; // For the Gender2
-
-  // End of radio Field error
-
-
-
 
   @override
   void initState() {
@@ -116,12 +93,13 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
       schoolStaffVecController.totalStaffController.text =
       (existingRecord.totalStaff ?? '');
       // Set other dropdown values
-      _selectedValue = existingRecord.udiseValue;
-      _selectedValue2 = existingRecord.headGender;
-      _selectedValue3 = existingRecord.genderVec;
-      _selectedDesignation = existingRecord.headDesignation;
-      selected2Designation = existingRecord.vecQualification;
-      _selected3Designation = existingRecord.meetingDuration;
+      schoolStaffVecController.selectedValue = existingRecord.udiseValue;
+      schoolStaffVecController.selectedValue2 = existingRecord.headGender;
+      schoolStaffVecController.selectedValue3 = existingRecord.genderVec;
+      schoolStaffVecController.selectedDesignation = existingRecord.headDesignation;
+      schoolStaffVecController.selected2Designation = existingRecord.vecQualification;
+      schoolStaffVecController.selected3Designation = existingRecord.meetingDuration;
+      widget.userid = existingRecord.createdBy;
 
       // Set other fields related to tour and school
       schoolStaffVecController.setTour(existingRecord.tourId);
@@ -190,7 +168,7 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                     }
 
                                     return Column(children: [
-                                      if (showBasicDetails) ...[
+                                      if (schoolStaffVecController.showBasicDetails) ...[
                                         LabelText(
                                           label: 'Basic Details',
                                         ),
@@ -214,7 +192,7 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                           selectedOption: schoolStaffVecController.tourValue,
                                           onChanged: (value) {
                                             // Safely handle the school list splitting by commas
-                                            splitSchoolLists = tourController
+                                            schoolStaffVecController.splitSchoolLists = tourController
                                                 .getLocalTourList
                                                 .where((e) => e.tourId == value)
                                                 .map((e) => e.allSchool!.split(',').map((s) => s.trim()).toList())
@@ -254,7 +232,7 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                             showSearchBox: true,
                                             disabledItemFn: (String s) => s.startsWith('I'), // Disable based on condition
                                           ),
-                                          items: splitSchoolLists, // Split school list as strings
+                                          items: schoolStaffVecController.splitSchoolLists, // Split school list as strings
                                           dropdownDecoratorProps: const DropDownDecoratorProps(
                                             dropdownSearchDecoration: InputDecoration(
                                               labelText: "Select School",
@@ -285,10 +263,10 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                             children: [
                                               Radio(
                                                 value: 'Yes',
-                                                groupValue: _selectedValue,
+                                                groupValue: schoolStaffVecController.selectedValue,
                                                 onChanged: (value) {
                                                   setState(() {
-                                                    _selectedValue =
+                                                    schoolStaffVecController.selectedValue =
                                                     value as String?;
                                                   });
                                                   if (value == 'Yes') {
@@ -313,10 +291,10 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                             children: [
                                               Radio(
                                                 value: 'No',
-                                                groupValue: _selectedValue,
+                                                groupValue: schoolStaffVecController.selectedValue,
                                                 onChanged: (value) {
                                                   setState(() {
-                                                    _selectedValue =
+                                                    schoolStaffVecController.selectedValue =
                                                     value as String?;
                                                   });
                                                 },
@@ -325,7 +303,7 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                             ],
                                           ),
                                         ),
-                                        if (_radioFieldError)
+                                        if (schoolStaffVecController.radioFieldError)
                                           const Padding(
                                             padding:
                                             EdgeInsets.only(left: 16.0),
@@ -342,7 +320,7 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                           value: 20,
                                           side: 'height',
                                         ),
-                                        if (_selectedValue == 'No') ...[
+                                        if (schoolStaffVecController.selectedValue == 'No') ...[
                                           LabelText(
                                             label:
                                             'Write Correct UDISE school code',
@@ -387,17 +365,17 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                           onPressedButton: () {
                                             print('submit Basic Details');
                                             setState(() {
-                                              _radioFieldError =
-                                                  _selectedValue == null ||
-                                                      _selectedValue!.isEmpty;
+                                              schoolStaffVecController.radioFieldError =
+                                                  schoolStaffVecController.selectedValue == null ||
+                                                      schoolStaffVecController.selectedValue!.isEmpty;
                                             });
 
                                             if (_formKey.currentState!
                                                 .validate() &&
-                                                !_radioFieldError) {
+                                                !schoolStaffVecController.radioFieldError) {
                                               setState(() {
-                                                showBasicDetails = false;
-                                                showStaffDetails = true;
+                                                schoolStaffVecController.showBasicDetails = false;
+                                                schoolStaffVecController.showStaffDetails = true;
                                               });
                                             }
                                           },
@@ -411,7 +389,7 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                       // End of Basic Details
 
                                       //start of staff Details
-                                      if (showStaffDetails) ...[
+                                      if (schoolStaffVecController.showStaffDetails) ...[
                                         LabelText(
                                           label: 'Staff Details',
                                         ),
@@ -459,12 +437,12 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                                     Radio(
                                                       value: 'Male',
                                                       groupValue:
-                                                      _selectedValue2,
+                                                      schoolStaffVecController.selectedValue2,
                                                       onChanged: (value) {
                                                         setState(() {
-                                                          _selectedValue2 =
+                                                          schoolStaffVecController.selectedValue2 =
                                                           value as String?;
-                                                          _radioFieldError2 =
+                                                          schoolStaffVecController.radioFieldError2 =
                                                           false; // Reset error state
                                                         });
                                                       },
@@ -480,12 +458,12 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                                     Radio(
                                                       value: 'Female',
                                                       groupValue:
-                                                      _selectedValue2,
+                                                      schoolStaffVecController.selectedValue2,
                                                       onChanged: (value) {
                                                         setState(() {
-                                                          _selectedValue2 =
+                                                          schoolStaffVecController.selectedValue2 =
                                                           value as String?;
-                                                          _radioFieldError2 =
+                                                          schoolStaffVecController.radioFieldError2 =
                                                           false; // Reset error state
                                                         });
                                                       },
@@ -498,7 +476,7 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                           },
                                         ),
 
-                                        if (_radioFieldError2)
+                                        if (schoolStaffVecController.radioFieldError2)
                                           const Padding(
                                             padding:
                                             EdgeInsets.only(top: 8.0),
@@ -601,10 +579,10 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                             labelText: 'Select a designation',
                                             border: OutlineInputBorder(),
                                           ),
-                                          value: _selectedDesignation,
+                                          value: schoolStaffVecController.selectedDesignation,
                                           items: [
                                             DropdownMenuItem(
-                                                value: 'HeadMaster/HeadMistress',
+                                                value: 'HeadMaster/ HeadMistress',
                                                 child: Text('HeadMaster/HeadMistress')),
                                             DropdownMenuItem(
                                                 value: 'Principal',
@@ -615,7 +593,7 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                           ],
                                           onChanged: (value) {
                                             setState(() {
-                                              _selectedDesignation = value;
+                                              schoolStaffVecController.selectedDesignation = value;
                                             });
                                           },
                                           validator: (value) {
@@ -698,8 +676,8 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                                 title: 'Back',
                                                 onPressedButton: () {
                                                   setState(() {
-                                                    showBasicDetails = true;
-                                                    showStaffDetails = false;
+                                                    schoolStaffVecController.showBasicDetails = true;
+                                                    schoolStaffVecController.showStaffDetails = false;
                                                     false;
                                                   });
                                                 }),
@@ -710,18 +688,18 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
 
                                                 print('submit staff details');
                                                 setState(() {
-                                                  _radioFieldError2 =
-                                                      _selectedValue2 == null ||
-                                                          _selectedValue2!
+                                                  schoolStaffVecController.radioFieldError2 =
+                                                      schoolStaffVecController.selectedValue2 == null ||
+                                                          schoolStaffVecController.selectedValue2!
                                                               .isEmpty;
                                                 });
 
                                                 if (_formKey.currentState!
                                                     .validate() &&
-                                                    !_radioFieldError2) {
+                                                    !schoolStaffVecController.radioFieldError2) {
                                                   setState(() {
-                                                    showStaffDetails = false;
-                                                    showSmcVecDetails = true;
+                                                    schoolStaffVecController.showStaffDetails = false;
+                                                    schoolStaffVecController.showSmcVecDetails = true;
                                                   });
                                                 }
                                               },
@@ -735,7 +713,7 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                       ], //end of staff details
 
                                       // start of staff vec details
-                                      if (showSmcVecDetails) ...[
+                                      if (schoolStaffVecController.showSmcVecDetails) ...[
                                         LabelText(
                                           label: 'SMC VEC Details',
                                         ),
@@ -780,11 +758,11 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                                   children: [
                                                     Radio(
                                                       value: 'Male',
-                                                      groupValue: _selectedValue3,
+                                                      groupValue: schoolStaffVecController.selectedValue3,
                                                       onChanged: (value) {
                                                         setState(() {
-                                                          _selectedValue3 = value as String?;
-                                                          _radioFieldError3 = false; // Reset error state
+                                                          schoolStaffVecController.selectedValue3 = value as String?;
+                                                          schoolStaffVecController.radioFieldError3 = false; // Reset error state
                                                         });
                                                       },
                                                     ),
@@ -796,11 +774,11 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                                   children: [
                                                     Radio(
                                                       value: 'Female',
-                                                      groupValue: _selectedValue3,
+                                                      groupValue: schoolStaffVecController.selectedValue3,
                                                       onChanged: (value) {
                                                         setState(() {
-                                                          _selectedValue3 = value as String?;
-                                                          _radioFieldError3 = false; // Reset error state
+                                                          schoolStaffVecController.selectedValue3 = value as String?;
+                                                          schoolStaffVecController.radioFieldError3 = false; // Reset error state
                                                         });
                                                       },
                                                     ),
@@ -812,7 +790,7 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                           },
                                         ),
 
-                                        if (_radioFieldError3)
+                                        if (schoolStaffVecController.radioFieldError3)
                                           Padding(
                                             padding: const EdgeInsets.only(top: 8.0),
                                             child: const Text(
@@ -917,7 +895,7 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                             labelText: 'Select qualification',
                                             border: OutlineInputBorder(),
                                           ),
-                                          value: selected2Designation,
+                                          value: schoolStaffVecController.selected2Designation,
                                           items: [
                                             DropdownMenuItem(
                                                 value: 'Non Graduate',
@@ -929,12 +907,12 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                                 value: 'Post Graduate',
                                                 child: Text('Post Graduate')),
                                             DropdownMenuItem(
-                                                value: 'Others',
+                                                value: 'Other',
                                                 child: Text('Others')),
                                           ],
                                           onChanged: (value) {
                                             setState(() {
-                                    selected2Designation = value;
+                                              schoolStaffVecController.selected2Designation = value;
                                             });
                                           },
                                           validator: (value) {
@@ -947,7 +925,7 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                         CustomSizedBox(
                                             value: 20, side: 'height'),
 
-                                    if (selected2Designation ==
+                                    if (schoolStaffVecController.selected2Designation ==
                                     'Others') ...[
                                     LabelText(
                                     label: 'Please Specify Other',
@@ -1011,7 +989,7 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                             labelText: 'Select frequency',
                                             border: OutlineInputBorder(),
                                           ),
-                                          value: _selected3Designation,
+                                          value: schoolStaffVecController.selected3Designation,
                                           items: [
                                             DropdownMenuItem(
                                                 value: 'Once a month',
@@ -1031,7 +1009,7 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                           ],
                                           onChanged: (value) {
                                             setState(() {
-                                              _selected3Designation = value;
+                                              schoolStaffVecController.selected3Designation = value;
 
                                             });
 
@@ -1045,7 +1023,7 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                         ),
                                         CustomSizedBox(
                                             value: 20, side: 'height'),
-                                        if (_selected3Designation ==
+                                        if (schoolStaffVecController.selected3Designation ==
                                             'Other') ...[
                                           LabelText(
                                             label: 'Please Specify Other',
@@ -1078,8 +1056,8 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                                 title: 'Back',
                                                 onPressedButton: () {
                                                   setState(() {
-                                                    showStaffDetails = true;
-                                                    showSmcVecDetails = false;
+                                                    schoolStaffVecController.showStaffDetails = true;
+                                                    schoolStaffVecController.showSmcVecDetails = false;
                                                   });
                                                 }),
                                             const Spacer(),
@@ -1088,15 +1066,15 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                                 onPressedButton: () async {
 
                                                   setState(() {
-                                                    _radioFieldError3 =
-                                                        _selectedValue3 ==
+                                                    schoolStaffVecController.radioFieldError3 =
+                                                        schoolStaffVecController.selectedValue3 ==
                                                             null ||
-                                                            _selectedValue3!
+                                                            schoolStaffVecController.selectedValue3!
                                                                 .isEmpty;
                                                   });
                                                   if (_formKey.currentState!
                                                       .validate() &&
-                                                      !_radioFieldError3) {
+                                                      !schoolStaffVecController.radioFieldError3) {
                                                     print('Submit Vec Details');
 
                                                     DateTime now =
@@ -1109,7 +1087,7 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                                             '',
                                                         school: schoolStaffVecController.schoolValue ??
                                                             '',
-                                                        udiseValue: _selectedValue!,
+                                                        udiseValue: schoolStaffVecController.selectedValue!,
                                                         correctUdise: schoolStaffVecController
                                                             .correctUdiseCodeController
                                                             .text,
@@ -1136,11 +1114,11 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                                         otherQual: schoolStaffVecController.QualSpecifyController.text,
                                                         other: schoolStaffVecController.QualSpecify2Controller.text,
                                                         SmcVecName: schoolStaffVecController.nameOfchairpersonController.text,
-                                                        headGender: _selectedValue2!,
-                                                        genderVec: _selectedValue3!,
-                                                        headDesignation: _selectedDesignation!,
-                                                        meetingDuration: _selected3Designation!,
-                                                        vecQualification: selected2Designation!,
+                                                        headGender: schoolStaffVecController.selectedValue2!,
+                                                        genderVec: schoolStaffVecController.selectedValue3!,
+                                                        headDesignation: schoolStaffVecController.selectedDesignation!,
+                                                        meetingDuration: schoolStaffVecController.selected3Designation!,
+                                                        vecQualification: schoolStaffVecController.selected2Designation!,
                                                         createdAt: formattedDate.toString(),
                                                         createdBy: widget.userid.toString());
 
@@ -1156,10 +1134,22 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                                           .clearFields();
                                                       setState(() {
                                                         // Clear the image list
-                                                        _selectedValue = '';
-                                                        _selectedValue2 = '';
-                                                        _selectedValue3 = '';
-                                                        schoolStaffVecController.clearFields();
+                                                        schoolStaffVecController.selectedValue = '';
+                                                        schoolStaffVecController.selectedValue2 = '';
+                                                        schoolStaffVecController.selectedValue3 = '';
+                                                        schoolStaffVecController.correctUdiseCodeController.clear();
+                                                        schoolStaffVecController.nameOfHoiController.clear();
+                                                        schoolStaffVecController.staffPhoneNumberController.clear();
+                                                        schoolStaffVecController.emailController.clear();
+                                                        schoolStaffVecController.totalTeachingStaffController.clear();
+                                                        schoolStaffVecController.totalNonTeachingStaffController.clear();
+                                                        schoolStaffVecController.totalStaffController.clear();
+                                                        schoolStaffVecController.nameOfchairpersonController.clear();
+                                                        schoolStaffVecController.chairPhoneNumberController.clear();
+                                                        schoolStaffVecController.totalVecStaffController.clear();
+                                                        schoolStaffVecController.email2Controller.clear();
+                                                        schoolStaffVecController.QualSpecifyController.clear();
+                                                        schoolStaffVecController.QualSpecify2Controller.clear();
                                                       });
 
                                                       await saveDataToFile(enrolmentCollectionObj).then((_) {
@@ -1222,16 +1212,16 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
 }
 
 
-
-
 Future<void> saveDataToFile(SchoolStaffVecRecords data) async {
   try {
-    // Request storage permissions
+    // Request storage permissions (required for Android)
     var status = await Permission.storage.request();
     if (status.isGranted) {
-      // Use path_provider to get a valid directory, such as downloads
+      // Determine the correct storage directory based on the platform
       Directory? directory;
+
       if (Platform.isAndroid) {
+        // On Android, use external storage directory (typically for downloads)
         directory = await getExternalStorageDirectory();
         if (directory != null) {
           String newPath = '';
@@ -1246,29 +1236,37 @@ Future<void> saveDataToFile(SchoolStaffVecRecords data) async {
           }
           directory = Directory("$newPath/Download");
         }
+      } else if (Platform.isIOS) {
+        // On iOS, use the application documents directory
+        directory = await getApplicationDocumentsDirectory();
+      } else {
+        // For any other platforms, we use the application documents directory
+        directory = await getApplicationDocumentsDirectory();
       }
 
+      // Create the directory if it doesn't exist
       if (directory != null && !await directory.exists()) {
-        await directory.create(
-            recursive: true); // Create the directory if it doesn't exist
+        await directory.create(recursive: true);
       }
 
-      final path = '${directory!.path}/school_vec_form_${data
-          .createdBy}.txt';
+      // Construct the file path using a unique identifier (`createdBy`)
+      final path = '${directory!.path}/school_vec_form_${data.createdBy}.txt';
 
-      // Convert the EnrolmentCollectionModel object to a JSON string
+      // Convert the SchoolStaffVecRecords object to a JSON string
       String jsonString = jsonEncode(data);
 
       // Write the JSON string to a file
       File file = File(path);
       await file.writeAsString(jsonString);
 
+      // Log the success message
       print('Data saved to $path');
     } else {
+      // Handle the case where storage permission is not granted
       print('Storage permission not granted');
-      // Optionally, handle what happens if permission is denied
     }
   } catch (e) {
+    // Handle any errors that occur during the file saving process
     print('Error saving data: $e');
   }
 }

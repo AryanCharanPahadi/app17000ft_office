@@ -104,13 +104,7 @@ class _InPersonQuantitativeState extends State<InPersonQuantitative> {
       return;
     }
 
-    if (participants.length >= staffAttended) {
-      setState(() {
-        showError = true;
-        errorMessage = 'The number of participants exceeds the staff attended';
-      });
-      return;
-    }
+
 
     final result = await showModalBottomSheet(
       context: context,
@@ -272,13 +266,7 @@ class _InPersonQuantitativeState extends State<InPersonQuantitative> {
       return;
     }
     // Check if the number of participants matches the number of staff attended
-    if (participants.length != staffAttended) {
-      setState(() {
-        showError = true; // Show the error for mismatched counts
-        errorMessage = 'The number of participants must match the number of staff attended.';
-      });
-      return;
-    }
+
 
     // Reset error and proceed to the next step if checks are passed
     setState(() {
@@ -1250,6 +1238,10 @@ class _InPersonQuantitativeState extends State<InPersonQuantitative> {
                                                   .digiLabAdminPhoneNumberController,
                                           labelText: 'Phone number of admin',
                                           textInputType: TextInputType.number,
+                                          inputFormatters: [
+                                            FilteringTextInputFormatter
+                                                .digitsOnly, // Restrict input to only digits
+                                          ],
                                           validator: (value) {
                                             if (value!.isEmpty) {
                                               return 'Write Admin Name';
@@ -1602,6 +1594,11 @@ class _InPersonQuantitativeState extends State<InPersonQuantitative> {
                                     // Start of In School Refresher Training
                                     if (inPersonQuantitativeController
                                         .showSchoolRefresherTraining) ...[
+                                      LabelText(
+                                        label: 'In School Refresher Training',
+                                      ),
+                                      CustomSizedBox(value: 20, side: 'height'),
+
                                       LabelText(label: '1. How many staff attended the training?', astrick: true),
                                       CustomSizedBox(value: 20, side: 'height'),
                                       CustomTextFormField(
@@ -1662,17 +1659,7 @@ class _InPersonQuantitativeState extends State<InPersonQuantitative> {
                                           ),
                                           CustomSizedBox(value: 20, side: 'height'),
                                           // Show error if participants count does not match staff attended
-                                          if (showError)
-                                            Padding(
-                                              padding: const EdgeInsets.only(left: 16.0),
-                                              child: Align(
-                                                alignment: Alignment.centerLeft,
-                                                child: const Text(
-                                                  'The number of participants must match the number of staff attended.',
-                                                  style: TextStyle(color: Colors.red),
-                                                ),
-                                              ),
-                                            ),
+
 
 
                                     ],
@@ -2199,6 +2186,20 @@ class _InPersonQuantitativeState extends State<InPersonQuantitative> {
                                             title: 'Next',
                                             onPressedButton: () {
                                               _onNextPressed;
+                                              final totalStaff = int.tryParse(inPersonQuantitativeController.staafAttendedTrainingController.text) ?? 0;
+
+                                              // Check if the number of participants is equal to the total staff attended
+                                              if (participants.length != totalStaff) {
+                                                // Show an error message if they do not match
+                                                customSnackbar(
+                                                  'Error', // Title
+                                                  'The number of participants must equal the number of staff attended.', // Subtitle
+                                                  AppColors.error, // Background color, you can replace it with your preferred color
+                                                  AppColors.onPrimary, // Text color
+                                                  Icons.error, // Icon
+                                                );
+                                                return; // Exit the function if the counts do not match
+                                              }
                                               // Check if at least one checkbox is selected
                                               bool isCheckboxSelected = inPersonQuantitativeController.checkboxValue1 ||
                                                   inPersonQuantitativeController
@@ -3987,6 +3988,8 @@ class _AddParticipantsBottomSheetState
     if (widget.existingRoles.isNotEmpty) {
       _selectedDesignation =
           widget.existingRoles.first; // Default to the first role for editing
+      _selectedDesignation = null;
+
     }
   }
 
@@ -4085,12 +4088,13 @@ class _AddParticipantsBottomSheetState
 
 // Function to save JSON data to a file
 
+
 Future<void> saveDataToFile(InPersonQuantitativeRecords data) async {
   try {
     // Request storage permissions
     var status = await Permission.storage.request();
     if (status.isGranted) {
-      // Use path_provider to get a valid directory, such as downloads
+      // Use path_provider to get a valid directory
       Directory? directory;
       if (Platform.isAndroid) {
         directory = await getExternalStorageDirectory();
@@ -4107,50 +4111,52 @@ Future<void> saveDataToFile(InPersonQuantitativeRecords data) async {
           }
           directory = Directory("$newPath/Download");
         }
+      } else if (Platform.isIOS) {
+        // For iOS, use the application documents directory
+        directory = await getApplicationDocumentsDirectory();
       }
 
+      // Ensure the directory exists
       if (directory != null && !await directory.exists()) {
-        await directory.create(
-            recursive: true); // Create the directory if it doesn't exist
+        await directory.create(recursive: true); // Create the directory if it doesn't exist
       }
 
       final path =
           '${directory!.path}/nPerson_Quantitative_form_${data.submitted_by}.txt';
       print('Saving file to: $path'); // Debugging output
 
-      // Convert the EnrolmentCollectionModel object to a JSON string
+      // Convert the InPersonQuantitativeRecords object to a JSON string
       String jsonString = jsonEncode(data);
 
       // Handle Base64 conversion for images
       List<String> base64Images = [];
-      for (String imagePath in data.imgpath!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
+
+      // Create a list of image properties to iterate over
+      List<String?> imageProperties = [
+        data.imgpath,
+        data.training_pic,
+      ];
+
+      // Process each image property
+      for (var imageProperty in imageProperties) {
+        if (imageProperty != null) {
+          for (String imagePath in imageProperty.split(',')) {
+            File imageFile = File(imagePath);
+            if (await imageFile.exists()) {
+              List<int> imageBytes = await imageFile.readAsBytes();
+              String base64Image = base64Encode(imageBytes);
+              base64Images.add(base64Image);
+            } else {
+              print('Image not found: $imagePath');
+            }
+          }
         }
       }
 
-      for (String imagePath in data.training_pic!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
-        }
-      }
-
-      // Update the enrolment data to include Base64 image strings
+      // Update the data to include Base64 image strings
       Map<String, dynamic> updatedData = jsonDecode(jsonString);
-      updatedData['imgpath'] =
-          base64Images; // Store Base64 instead of file paths
-      updatedData['training_pic'] =
-          base64Images; // Store Base64 instead of file paths
+      updatedData['imgpath'] = base64Images; // Store Base64 instead of file paths
+      updatedData['training_pic'] = base64Images; // Store Base64 instead of file paths
 
       // Write the updated JSON string to a file
       File file = File(path);

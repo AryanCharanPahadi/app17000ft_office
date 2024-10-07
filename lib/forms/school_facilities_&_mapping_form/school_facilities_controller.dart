@@ -25,6 +25,47 @@ class SchoolFacilitiesController extends GetxController with BaseController {
   final TextEditingController correctUdiseCodeController = TextEditingController();
 
 
+  // Start of selecting Field
+  String? selectedValue = ''; // For the UDISE code
+  String? selectedValue2 = ''; // For the Residential School
+  String? selectedValue3 = ''; // For the Electricity Available
+  String? selectedValue4 = ''; // For the Internet Connectivity
+  String? selectedValue5 = ''; // For the Projector
+  String? selectedValue6 = ''; // For the Smart Classroom
+  String? selectedValue7 = ''; // For the Playground Available
+  String? selectedValue8 = ''; // For the Library Available
+  String? selectedValue9 = ''; // For the librarian training
+  String? selectedValue10 = ''; // For the librarian register
+  // End of selecting Field error
+
+
+  // Start of radio Field
+  bool radioFieldError = false; // For the UDISE code
+  bool radioFieldError2 = false; // For the Residential School
+  bool radioFieldError3 = false; // For the Electricity Available
+  bool radioFieldError4 = false; // For the Internet Connectivity
+  bool radioFieldError5 = false; // For the Projector
+  bool radioFieldError6 = false; // For the Smart Classroom
+  bool radioFieldError7 = false; // For the Playground Available
+  bool radioFieldError8 = false; // For the Library Available
+  bool radioFieldError9 = false; // For the librarian training
+  bool radioFieldError10 = false; // For the librarian register
+  // End of radio Field error
+
+  // Start of Showing Fields
+  bool showBasicDetails = true; // For show Basic Details
+  bool showSchoolFacilities = false; //For show and hide School Facilities
+  bool showLibrary = false; //For show and hide Library
+  // End of Showing Fields
+
+  bool validateRegister = false;
+  bool isImageUploaded = false;
+
+  bool validateRegister2 = false;
+  bool isImageUploaded2 = false;
+
+  List<String> splitSchoolLists = [];
+  String? selectedDesignation;
 
   final FocusNode _tourIdFocusNode = FocusNode();
   FocusNode get tourIdFocusNode => _tourIdFocusNode;
@@ -140,20 +181,6 @@ class SchoolFacilitiesController extends GetxController with BaseController {
 
 
 
-  List<String> splitSchoolLists = [];
-  String? selectedDesignation;
-
-  // Start of Showing Fields
-  bool showBasicDetails = true; // For show Basic Details
-  bool showSchoolFacilities = false; //For show and hide School Facilities
-  bool showLibrary = false; //For show and hide Library
-  // End of Showing Fields
-
-  bool validateRegister = false;
-  bool isImageUploaded = false;
-
-  bool validateRegister2 = false;
-  bool isImageUploaded2 = false;
 
 
   Widget bottomSheet(BuildContext context) {

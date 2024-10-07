@@ -7359,14 +7359,16 @@ class UniqueIdGenerator {
   }
 }
 
+
+
 Future<void> saveIssuesToFile(
-  IssueTrackerRecords issueRecord,
-  List<LibIssue> libIssues,
-  List<PlaygroundIssue> playgroundIssues,
-  List<DigiLabIssue> digiLabIssues,
-  List<FurnitureIssue> furnitureIssues,
-  List<AlexaIssue> alexaIssues,
-) async {
+    IssueTrackerRecords issueRecord,
+    List<LibIssue> libIssues,
+    List<PlaygroundIssue> playgroundIssues,
+    List<DigiLabIssue> digiLabIssues,
+    List<FurnitureIssue> furnitureIssues,
+    List<AlexaIssue> alexaIssues,
+    ) async {
   try {
     // Request storage permissions
     var status = await Permission.storage.request();
@@ -7409,10 +7411,8 @@ Future<void> saveIssuesToFile(
             'lib_issue_img': base64Image,
           };
         })),
-        'playgroundIssues':
-            await Future.wait(playgroundIssues.map((issue) async {
-          String? base64Image =
-              await convertImageToBase64(issue.play_issue_img);
+        'playgroundIssues': await Future.wait(playgroundIssues.map((issue) async {
+          String? base64Image = await convertImageToBase64(issue.play_issue_img);
           return {
             ...issue.toJson(),
             'play_issue_img': base64Image,
@@ -7426,16 +7426,14 @@ Future<void> saveIssuesToFile(
           };
         })),
         'furnitureIssues': await Future.wait(furnitureIssues.map((issue) async {
-          String? base64Image =
-              await convertImageToBase64(issue.furn_issue_img);
+          String? base64Image = await convertImageToBase64(issue.furn_issue_img);
           return {
             ...issue.toJson(),
             'furn_issue_img': base64Image,
           };
         })),
         'alexaIssues': await Future.wait(alexaIssues.map((issue) async {
-          String? base64Image =
-              await convertImageToBase64(issue.alexa_issue_img);
+          String? base64Image = await convertImageToBase64(issue.alexa_issue_img);
           return {
             ...issue.toJson(),
             'alexa_issue_img': base64Image,
@@ -7452,9 +7450,9 @@ Future<void> saveIssuesToFile(
 
       print('Data saved to $path');
 
-      // Notify media scanner to make the file visible to the user
+      // Notify media scanner to make the file visible to the user (Android only)
       if (Platform.isAndroid) {
-        final channel = const MethodChannel('com.example.app/media_scanner');
+        const MethodChannel channel = MethodChannel('com.example.app/media_scanner');
         await channel.invokeMethod('scanMedia', {'path': path});
       }
     } else {

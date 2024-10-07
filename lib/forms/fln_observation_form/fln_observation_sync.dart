@@ -95,13 +95,28 @@ class _FlnObservationSync extends State<FlnObservationSync> {
                     itemBuilder: (context, index) {
                       final item = flnObservationController.flnObservationList[index];
                       return ListTile(
-                        title: Text(
-                          "${index + 1}. Tour ID: ${item.tourId!}\nSchool: ${item.school!}",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: MediaQuery.of(context).size.width * 0.04, // Dynamic font size based on screen width
-                          ),
+                        title:LayoutBuilder(
+                          builder: (context, constraints) {
+                            // Adjust font size based on screen width, ensuring it scales well for tablets and mobile
+                            double fontSize = constraints.maxWidth * 0.04; // Example calculation for responsive font size
+
+                            // Optional: Set a minimum and maximum font size to maintain readability on smaller and larger devices
+                            if (fontSize < 16) {
+                              fontSize = 16; // Minimum font size
+                            } else if (fontSize > 24) {
+                              fontSize = 24; // Maximum font size
+                            }
+
+                            return Text(
+                              "${index + 1}. Tour ID: ${item.tourId!}\nSchool: ${item.school!}",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: fontSize, // Apply the calculated font size
+                              ),
+                            );
+                          },
                         ),
+
                         trailing:          IconButton(
                           color: _networkManager.connectionType.value == 0
                               ? Colors.grey  // Grey out the button when offline

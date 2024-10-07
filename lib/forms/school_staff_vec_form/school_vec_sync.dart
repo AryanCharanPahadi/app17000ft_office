@@ -186,8 +186,8 @@ class _SchoolStaffVecSyncState extends State<SchoolStaffVecSync> {
 
                                         // Call the insert function
                                         var rsp = await insertSchoolStaffVec(
-                                          item.school,
                                           item.tourId,
+                                          item.school,
                                           item.udiseValue,
                                           item.correctUdise,
                                           item.headName,

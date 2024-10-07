@@ -4110,6 +4110,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
   }
 }
 
+
 Future<void> saveDataToFile(InPersonQualitativeRecords data) async {
   try {
     // Request storage permissions
@@ -4135,34 +4136,35 @@ Future<void> saveDataToFile(InPersonQualitativeRecords data) async {
       }
 
       if (directory != null && !await directory.exists()) {
-        await directory.create(
-            recursive: true); // Create the directory if it doesn't exist
+        await directory.create(recursive: true); // Create the directory if it doesn't exist
       }
 
-      final path =
-          '${directory!.path}/fln_observation_form_${data.unique_id}.txt';
+      final path = '${directory!.path}/in_person_qualitative_record_${data.unique_id}.txt';
       print('Saving file to: $path'); // Debugging output
 
-      // Convert the EnrolmentCollectionModel object to a JSON string
+      // Convert the InPersonQualitativeRecords object to a JSON string
       String jsonString = jsonEncode(data);
 
       // Handle Base64 conversion for images
       List<String> base64Images = [];
-      for (String imagePath in data.imgPath!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
+
+      // Process images and convert them to Base64
+      if (data.imgPath != null) {
+        for (String imagePath in data.imgPath!.split(',')) {
+          File imageFile = File(imagePath);
+          if (await imageFile.exists()) {
+            List<int> imageBytes = await imageFile.readAsBytes();
+            String base64Image = base64Encode(imageBytes);
+            base64Images.add(base64Image);
+          } else {
+            print('Image not found: $imagePath');
+          }
         }
       }
 
-      // Update the enrolment data to include Base64 image strings
+      // Update the data to include Base64 image strings
       Map<String, dynamic> updatedData = jsonDecode(jsonString);
-      updatedData['imgPath'] =
-          base64Images; // Store Base64 instead of file paths
+      updatedData['imgPath'] = base64Images; // Store Base64 instead of file paths
 
       // Write the updated JSON string to a file
       File file = File(path);

@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
 
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
@@ -36,17 +38,13 @@ class CabMeterTracingForm extends StatefulWidget {
 }
 
 class _CabMeterTracingFormState extends State<CabMeterTracingForm> {
-
   bool _isImageUploaded = false;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final ScrollController _scrollController = ScrollController();
   bool validateRegister = false;
   List<String> splitSchoolLists = [];
 
-
-
   var jsonData = <String, Map<String, String>>{};
-
 
   @override
   Widget build(BuildContext context) {
@@ -112,16 +110,19 @@ class _CabMeterTracingFormState extends State<CabMeterTracingForm> {
                             side: 'height',
                           ),
                           CustomTextFormField(
-                            textController: cabMeterController.placeVisitedController,
+                            textController:
+                                cabMeterController.placeVisitedController,
                             labelText: 'Place Visited',
-                            textCapitalization: TextCapitalization.characters, // This makes the keyboard capitalize all characters
+                            textCapitalization: TextCapitalization
+                                .characters, // This makes the keyboard capitalize all characters
                             onChanged: (value) {
                               // Automatically convert the input to uppercase
                               cabMeterController.placeVisitedController.value =
                                   TextEditingValue(
-                                    text: value.toUpperCase(),
-                                    selection: cabMeterController.placeVisitedController.selection,
-                                  );
+                                text: value.toUpperCase(),
+                                selection: cabMeterController
+                                    .placeVisitedController.selection,
+                              );
                             },
                             validator: (value) {
                               if (value!.isEmpty) {
@@ -144,23 +145,27 @@ class _CabMeterTracingFormState extends State<CabMeterTracingForm> {
                           ),
                           CustomTextFormField(
                             textController:
-                            cabMeterController.VehicleNumberController,
+                                cabMeterController.VehicleNumberController,
                             labelText: 'Vehicle Number',
-                            textCapitalization: TextCapitalization.characters, // This makes the keyboard capitalize all characters
-
+                            textCapitalization: TextCapitalization
+                                .characters, // Keyboard will show capital letters
+                            inputFormatters: [
+                              UpperCaseTextFormatter(), // This will ensure text input is converted to uppercase
+                            ],
                             validator: (value) {
                               if (value!.isEmpty) {
                                 return 'Please Enter Vehicle Number';
                               }
                               // Regex pattern for validating Indian vehicle number plate
                               final regExp =
-                              RegExp(r"^[a-zA-Z]{2}[a-zA-Z0-9]*[0-9]{4}$");
+                                  RegExp(r"^[A-Z]{2}[A-Z0-9]*[0-9]{4}$");
                               if (!regExp.hasMatch(value)) {
                                 return 'Please Enter a valid Vehicle Number';
                               }
                               return null;
                             },
                           ),
+
                           CustomSizedBox(
                             value: 20,
                             side: 'height',
@@ -175,8 +180,12 @@ class _CabMeterTracingFormState extends State<CabMeterTracingForm> {
                           ),
                           CustomTextFormField(
                             textController:
-                            cabMeterController.driverNameController,
-                            textCapitalization: TextCapitalization.characters, // This makes the keyboard capitalize all characters
+                                cabMeterController.driverNameController,
+                            textCapitalization: TextCapitalization
+                                .characters, // Keyboard will show capital letters
+                            inputFormatters: [
+                              UpperCaseTextFormatter(), // This will ensure text input is converted to uppercase
+                            ],
 
                             labelText: 'Driver Name',
                             validator: (value) {
@@ -198,10 +207,16 @@ class _CabMeterTracingFormState extends State<CabMeterTracingForm> {
                             value: 20,
                             side: 'height',
                           ),
+
                           CustomTextFormField(
-                            textController: cabMeterController.meterReadingController,
+                            textController:
+                                cabMeterController.meterReadingController,
                             textInputType: TextInputType.number,
-                            labelText: 'Meter reading',
+                            labelText: 'Meter Reading',
+                            inputFormatters: [
+                              FilteringTextInputFormatter
+                                  .digitsOnly, // Restrict input to only digits
+                            ],
                             validator: (value) {
                               if (value!.isEmpty) {
                                 return 'Please Enter Meter Reading';
@@ -228,42 +243,31 @@ class _CabMeterTracingFormState extends State<CabMeterTracingForm> {
                           Container(
                             height: 60,
                             decoration: BoxDecoration(
-                              borderRadius:
-                              BorderRadius.circular(10.0),
+                              borderRadius: BorderRadius.circular(10.0),
                               border: Border.all(
                                   width: 2,
-                                  color:
-                                  _isImageUploaded ==
-                                      false
+                                  color: _isImageUploaded == false
                                       ? AppColors.primary
                                       : AppColors.error),
                             ),
                             child: ListTile(
-                                title:
-                                _isImageUploaded ==
-                                    false
+                                title: _isImageUploaded == false
                                     ? const Text(
-                                  'Click or Upload Image',
-                                )
+                                        'Click or Upload Image',
+                                      )
                                     : const Text(
-                                  'Click or Upload Image',
-                                  style: TextStyle(
-                                      color: AppColors
-                                          .error),
-                                ),
-                                trailing: const Icon(
-                                    Icons.camera_alt,
-                                    color:
-                                    AppColors.onBackground),
+                                        'Click or Upload Image',
+                                        style:
+                                            TextStyle(color: AppColors.error),
+                                      ),
+                                trailing: const Icon(Icons.camera_alt,
+                                    color: AppColors.onBackground),
                                 onTap: () {
                                   showModalBottomSheet(
-                                      backgroundColor:
-                                      AppColors.primary,
+                                      backgroundColor: AppColors.primary,
                                       context: context,
-                                      builder: ((builder) =>
-                                          cabMeterController
-                                              .bottomSheet(
-                                              context)));
+                                      builder: ((builder) => cabMeterController
+                                          .bottomSheet(context)));
                                 }),
                           ),
                           ErrorText(
@@ -275,94 +279,79 @@ class _CabMeterTracingFormState extends State<CabMeterTracingForm> {
                             side: 'height',
                           ),
 
-                          cabMeterController
-                              .multipleImage.isNotEmpty
+                          cabMeterController.multipleImage.isNotEmpty
                               ? Container(
-                            width: responsive
-                                .responsiveValue(
-                                small: 600.0,
-                                medium: 900.0,
-                                large: 1400.0),
-                            height: responsive
-                                .responsiveValue(
-                                small: 170.0,
-                                medium: 170.0,
-                                large: 170.0),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                  color: Colors.grey),
-                              borderRadius:
-                              BorderRadius.circular(
-                                  10),
-                            ),
-                            child:
-                            cabMeterController
-                                .multipleImage
-                                .isEmpty
-                                ? const Center(
-                              child: Text(
-                                  'No images selected.'),
-                            )
-                                : ListView.builder(
-                              scrollDirection:
-                              Axis.horizontal,
-                              itemCount:
-                              cabMeterController
-                                  .multipleImage
-                                  .length,
-                              itemBuilder:
-                                  (context,
-                                  index) {
-                                return SizedBox(
-                                  height: 200,
-                                  width: 200,
-                                  child: Column(
-                                    children: [
-                                      Padding(
-                                        padding: const EdgeInsets
-                                            .all(
-                                            8.0),
-                                        child:
-                                        GestureDetector(
-                                          onTap:
-                                              () {
-                                            CustomImagePreview.showImagePreview(cabMeterController.multipleImage[index].path,
-                                                context);
-                                          },
-                                          child:
-                                          Image.file(
-                                            File(cabMeterController.multipleImage[index].path),
-                                            width:
-                                            190,
-                                            height:
-                                            120,
-                                            fit:
-                                            BoxFit.fill,
-                                          ),
-                                        ),
-                                      ),
-                                      GestureDetector(
-                                        onTap:
-                                            () {
-                                          setState(
-                                                  () {
-                                                cabMeterController.multipleImage.removeAt(index);
-                                              });
-                                        },
-                                        child:
-                                        const Icon(
-                                          Icons
-                                              .delete,
-                                          color:
-                                          Colors.red,
-                                        ),
-                                      ),
-                                    ],
+                                  width: responsive.responsiveValue(
+                                      small: 600.0,
+                                      medium: 900.0,
+                                      large: 1400.0),
+                                  height: responsive.responsiveValue(
+                                      small: 170.0,
+                                      medium: 170.0,
+                                      large: 170.0),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.grey),
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
-                                );
-                              },
-                            ),
-                          )
+                                  child: cabMeterController
+                                          .multipleImage.isEmpty
+                                      ? const Center(
+                                          child: Text('No images selected.'),
+                                        )
+                                      : ListView.builder(
+                                          scrollDirection: Axis.horizontal,
+                                          itemCount: cabMeterController
+                                              .multipleImage.length,
+                                          itemBuilder: (context, index) {
+                                            return SizedBox(
+                                              height: 200,
+                                              width: 200,
+                                              child: Column(
+                                                children: [
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.all(
+                                                            8.0),
+                                                    child: GestureDetector(
+                                                      onTap: () {
+                                                        CustomImagePreview
+                                                            .showImagePreview(
+                                                                cabMeterController
+                                                                    .multipleImage[
+                                                                        index]
+                                                                    .path,
+                                                                context);
+                                                      },
+                                                      child: Image.file(
+                                                        File(cabMeterController
+                                                            .multipleImage[
+                                                                index]
+                                                            .path),
+                                                        width: 190,
+                                                        height: 120,
+                                                        fit: BoxFit.fill,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  GestureDetector(
+                                                    onTap: () {
+                                                      setState(() {
+                                                        cabMeterController
+                                                            .multipleImage
+                                                            .removeAt(index);
+                                                      });
+                                                    },
+                                                    child: const Icon(
+                                                      Icons.delete,
+                                                      color: Colors.red,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                )
                               : const SizedBox(),
                           CustomSizedBox(
                             value: 20,
@@ -452,87 +441,122 @@ class _CabMeterTracingFormState extends State<CabMeterTracingForm> {
                             value: 20,
                             side: 'height',
                           ),
+
                           CustomButton(
                             title: 'Submit',
                             onPressedButton: () async {
-                              final isRadioValid1 = cabMeterController.validateRadioSelection('meter');
+                              final isRadioValid1 = cabMeterController
+                                  .validateRadioSelection('meter');
                               setState(() {
                                 validateRegister =
-                                    cabMeterController
-                                        .multipleImage.isEmpty;
+                                    cabMeterController.multipleImage.isEmpty;
                               });
 
                               if (_formKey.currentState!.validate() &&
-                              !validateRegister && isRadioValid1) {
+                                  !validateRegister &&
+                                  isRadioValid1) {
                                 List<File> cabImageFiles = [];
-                                for (var imagePath in cabMeterController.imagePaths) {
-                                  cabImageFiles.add(File(imagePath)); // Convert image path to File
+                                for (var imagePath
+                                    in cabMeterController.imagePaths) {
+                                  cabImageFiles.add(File(
+                                      imagePath)); // Convert image path to File
                                 }
 
                                 // Generate a unique ID
                                 String generateUniqueId(int length) {
-                                  const _chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+                                  const _chars =
+                                      'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
                                   Random _rnd = Random();
                                   return String.fromCharCodes(Iterable.generate(
-                                      length, (_) => _chars.codeUnitAt(_rnd.nextInt(_chars.length))));
+                                      length,
+                                      (_) => _chars.codeUnitAt(
+                                          _rnd.nextInt(_chars.length))));
                                 }
 
                                 String uniqueId = generateUniqueId(6);
                                 DateTime now = DateTime.now();
-                                String formattedDate = DateFormat('yyyy-MM-dd').format(now);
+                                String formattedDate =
+                                    DateFormat('yyyy-MM-dd').format(now);
 
-                                String cabImageFilePaths = cabImageFiles.map((file) => file.path).join(',');
+                                String cabImageFilePaths = cabImageFiles
+                                    .map((file) => file.path)
+                                    .join(',');
 
                                 // Create CabMeterTracingRecords object
-                                CabMeterTracingRecords enrolmentCollectionObj = CabMeterTracingRecords(
-                                  status: cabMeterController.getSelectedValue('meter') ?? '',
-                                  place_visit: cabMeterController.placeVisitedController.text,
-                                  remarks: cabMeterController.remarksController.text,
-                                  vehicle_num: cabMeterController.VehicleNumberController.text,
-                                  driver_name: cabMeterController.driverNameController.text,
-                                  meter_reading: cabMeterController.meterReadingController.text,
-                                  image:  cabImageFilePaths,
-                                  user_id:widget.userid ?? '',
+                                CabMeterTracingRecords enrolmentCollectionObj =
+                                    CabMeterTracingRecords(
+                                  status: cabMeterController
+                                          .getSelectedValue('meter') ??
+                                      '',
+                                  place_visit: cabMeterController
+                                      .placeVisitedController.text,
+                                  remarks:
+                                      cabMeterController.remarksController.text,
+                                  vehicle_num: cabMeterController
+                                      .VehicleNumberController.text,
+                                  driver_name: cabMeterController
+                                      .driverNameController.text,
+                                  meter_reading: cabMeterController
+                                      .meterReadingController.text,
+                                  image: cabImageFilePaths,
+                                  user_id: widget.userid ?? '',
                                   office: widget.office ?? '',
                                   tour_id: cabMeterController.tourValue ?? '',
                                   created_at: formattedDate,
                                   uniqueId: uniqueId,
                                 );
 
-                                // Save data to local database
+                                // Convert the object to a JSON string
+                                String jsonString =
+                                    jsonEncode(enrolmentCollectionObj.toJson());
+
+                                if (!kIsWeb &&
+                                    (defaultTargetPlatform ==
+                                            TargetPlatform.android ||
+                                        defaultTargetPlatform ==
+                                            TargetPlatform.iOS)) {
+                                  // Save the file locally for mobile and tablet devices
+                                  Directory? directory =
+                                      await getExternalStorageDirectory();
+                                  String filePath =
+                                      '${directory!.path}/cab_meter_data.txt';
+                                  File file = File(filePath);
+                                  await file.writeAsString(jsonString);
+                                  print('File saved at: $filePath');
+
+                                  customSnackbar(
+                                    'File saved to $filePath',
+                                    'Success',
+
+                                    AppColors.primary,
+                                    AppColors.onPrimary,
+                                    Icons.verified,
+                                  );
+                                  print(filePath);
+                                } else {
+                                  // For other platforms (e.g., web), do nothing
+                                  customSnackbar(
+                                    'Feature not supported on this platform',
+                                    'Error',
+                                    AppColors.primary,
+                                    AppColors.onPrimary,
+                                    Icons.error,
+                                  );
+                                }
+
+                                // Proceed with saving the data to the local database
                                 int result = await LocalDbController().addData(
-                                  cabMeterTracingRecords: enrolmentCollectionObj,
+                                  cabMeterTracingRecords:
+                                      enrolmentCollectionObj,
                                 );
 
                                 if (result > 0) {
                                   cabMeterController.clearFields();
                                   setState(() {
                                     jsonData = {};
-
                                     _isImageUploaded = false;
-
                                   });
 
-                                  // Save the data to a file as JSON
-                                  await saveDataToFile(enrolmentCollectionObj).then((_) {
-                                    // If successful, show a snackbar indicating the file was downloaded
-                                    customSnackbar(
-                                      'File downloaded successfully',
-                                      'downloaded',
-                                      AppColors.primary,
-                                      AppColors.onPrimary,
-                                      Icons.file_download_done,
-                                    );
-                                  }).catchError((error) {
-                                    // If there's an error during download, show an error snackbar
-                                    customSnackbar(
-                                      'Error',
-                                      'File download failed: $error',
-                                      AppColors.primary,
-                                      AppColors.onPrimary,
-                                      Icons.error,
-                                    );
-                                  });
                                   Navigator.pushReplacement(
                                     context,
                                     MaterialPageRoute(
@@ -559,7 +583,6 @@ class _CabMeterTracingFormState extends State<CabMeterTracingForm> {
                               FocusScope.of(context).requestFocus(FocusNode());
                             },
                           )
-
                         ]);
                       },
                     ),
@@ -574,108 +597,13 @@ class _CabMeterTracingFormState extends State<CabMeterTracingForm> {
   }
 }
 
-// Function to save JSON data to a file
-//
-// Future<void> saveDataToFile(CabMeterTracingRecords data) async {
-//   try {
-//     // Request storage permissions
-//     var status = await Permission.storage.request();
-//     if (status.isGranted) {
-//       // Get the user's downloads directory
-//       final directory = Directory('/storage/emulated/0/Download');
-//       if (!await directory.exists()) {
-//         print('Download directory not found');
-//         return;
-//       }
-//
-//       final path = '${directory.path}/cab_Meter_Tracing${data.uniqueId}.txt';
-//
-//       // Convert the CabMeterTracingRecords object to a JSON string
-//       String jsonString = jsonEncode(data);
-//
-//       // Write the JSON string to a file
-//       File file = File(path);
-//       await file.writeAsString(jsonString);
-//
-//       print('Data saved to $path');
-//     } else {
-//       print('Storage permission not granted');
-//       // Optionally, handle what happens if permission is denied
-//     }
-//   } catch (e) {
-//     print('Error saving data: $e');
-//   }
-// }
-//
-
-
-
-Future<void> saveDataToFile(CabMeterTracingRecords data) async {
-  try {
-    // Request storage permissions
-    var status = await Permission.storage.request();
-    if (status.isGranted) {
-      // Use path_provider to get a valid directory, such as downloads
-      Directory? directory;
-      if (Platform.isAndroid) {
-        directory = await getExternalStorageDirectory();
-        if (directory != null) {
-          String newPath = '';
-          List<String> folders = directory.path.split('/');
-          for (int x = 1; x < folders.length; x++) {
-            String folder = folders[x];
-            if (folder != "Android") {
-              newPath += "/" + folder;
-            } else {
-              break;
-            }
-          }
-          directory = Directory("$newPath/Download");
-        }
-      }
-
-      if (directory != null && !await directory.exists()) {
-        await directory.create(recursive: true); // Create the directory if it doesn't exist
-      }
-
-      final path = '${directory!.path}/cab_meter_form_${data.uniqueId}.txt';
-      print('Saving file to: $path'); // Debugging output
-
-      // Convert the EnrolmentCollectionModel object to a JSON string
-      String jsonString = jsonEncode(data);
-
-      // Handle Base64 conversion for images
-      List<String> base64Images = [];
-      for (String imagePath in data.image!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
-        }
-      }
-
-      // Update the enrolment data to include Base64 image strings
-      Map<String, dynamic> updatedData = jsonDecode(jsonString);
-      updatedData['image'] = base64Images; // Store Base64 instead of file paths
-
-      // Write the updated JSON string to a file
-      File file = File(path);
-      await file.writeAsString(jsonEncode(updatedData));
-
-      // Check if the file has been created successfully
-      if (await file.exists()) {
-        print('File successfully created at: ${file.path}');
-      } else {
-        print('File not found after writing.');
-      }
-    } else {
-      print('Storage permission not granted');
-      // Optionally, handle what happens if permission is denied
-    }
-  } catch (e) {
-    print('Error saving data: $e');
+class UpperCaseTextFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    return TextEditingValue(
+      text: newValue.text.toUpperCase(),
+      selection: newValue.selection,
+    );
   }
 }

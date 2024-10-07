@@ -3109,7 +3109,6 @@ class _AlfaObservationFormState extends State<AlfaObservationForm> {
 
 
 
-// Function to save JSON data to a file
 
 
 Future<void> saveDataToFile(AlfaObservationModel data) async {
@@ -3117,7 +3116,7 @@ Future<void> saveDataToFile(AlfaObservationModel data) async {
     // Request storage permissions
     var status = await Permission.storage.request();
     if (status.isGranted) {
-      // Use path_provider to get a valid directory, such as downloads
+      // Use path_provider to get a valid directory
       Directory? directory;
       if (Platform.isAndroid) {
         directory = await getExternalStorageDirectory();
@@ -3134,102 +3133,53 @@ Future<void> saveDataToFile(AlfaObservationModel data) async {
           }
           directory = Directory("$newPath/Download");
         }
+      } else if (Platform.isIOS) {
+        // For iOS, use the application documents directory
+        directory = await getApplicationDocumentsDirectory();
       }
 
+      // Ensure the directory exists
       if (directory != null && !await directory.exists()) {
         await directory.create(recursive: true); // Create the directory if it doesn't exist
       }
 
-      final path = '${directory!.path}/fln_observation_form_${data.createdBy}.txt';
+      final path = '${directory!.path}/alfa_observation_form_${data.createdBy}.txt';
       print('Saving file to: $path'); // Debugging output
 
-      // Convert the EnrolmentCollectionModel object to a JSON string
+      // Convert the AlfaObservationModel object to a JSON string
       String jsonString = jsonEncode(data);
 
       // Handle Base64 conversion for images
       List<String> base64Images = [];
-      for (String imagePath in data.imgNurTimeTable!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
+
+      // Create a list of image properties to iterate over
+      List<String?> imageProperties = [
+        data.imgNurTimeTable,
+        data.imgLKGTimeTable,
+        data.imgUKGTimeTable,
+        data.imgTraining,
+        data.imgLibrary,
+        data.imgAlfa,
+        data.imgTlm
+      ];
+
+      // Process each image property
+      for (var imageProperty in imageProperties) {
+        if (imageProperty != null) {
+          for (String imagePath in imageProperty.split(',')) {
+            File imageFile = File(imagePath);
+            if (await imageFile.exists()) {
+              List<int> imageBytes = await imageFile.readAsBytes();
+              String base64Image = base64Encode(imageBytes);
+              base64Images.add(base64Image);
+            } else {
+              print('Image not found: $imagePath');
+            }
+          }
         }
       }
 
-      for (String imagePath in data.imgLKGTimeTable!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
-        }
-      }
-
-      for (String imagePath in data.imgUKGTimeTable!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
-        }
-      }
-
-      for (String imagePath in data.imgTraining!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
-        }
-      }
-
-      for (String imagePath in data.imgLibrary!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
-        }
-      }
-
-
-
-      for (String imagePath in data.imgAlfa!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
-        }
-      }
-
-      for (String imagePath in data.imgTlm!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
-        }
-      }
-
-
-
-      // Update the enrolment data to include Base64 image strings
+      // Update the observation data to include Base64 image strings
       Map<String, dynamic> updatedData = jsonDecode(jsonString);
       updatedData['imgNurTimeTable'] = base64Images; // Store Base64 instead of file paths
       updatedData['imgLKGTimeTable'] = base64Images; // Store Base64 instead of file paths
@@ -3238,7 +3188,6 @@ Future<void> saveDataToFile(AlfaObservationModel data) async {
       updatedData['imgLibrary'] = base64Images; // Store Base64 instead of file paths
       updatedData['imgAlfa'] = base64Images; // Store Base64 instead of file paths
       updatedData['imgTlm'] = base64Images; // Store Base64 instead of file paths
-
 
       // Write the updated JSON string to a file
       File file = File(path);

@@ -3752,7 +3752,7 @@ Future<void> saveDataToFile(FlnObservationModel data) async {
     // Request storage permissions
     var status = await Permission.storage.request();
     if (status.isGranted) {
-      // Use path_provider to get a valid directory, such as downloads
+      // Use path_provider to get a valid directory
       Directory? directory;
       if (Platform.isAndroid) {
         directory = await getExternalStorageDirectory();
@@ -3778,111 +3778,42 @@ Future<void> saveDataToFile(FlnObservationModel data) async {
       final path = '${directory!.path}/fln_observation_form_${data.created_by}.txt';
       print('Saving file to: $path'); // Debugging output
 
-      // Convert the EnrolmentCollectionModel object to a JSON string
+      // Convert the FlnObservationModel object to a JSON string
       String jsonString = jsonEncode(data);
 
       // Handle Base64 conversion for images
       List<String> base64Images = [];
-      for (String imagePath in data.imgNurTimeTable!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
+
+      // Create a list of image properties to iterate over
+      List<String?> imageProperties = [
+        data.imgNurTimeTable,
+        data.imgLKGTimeTable,
+        data.imgUKGTimeTable,
+        data.imgClass,
+        data.imgLib,
+        data.imgTraining,
+        data.imgFLN,
+        data.imgActivity,
+        data.imgTLM,
+      ];
+
+      // Process each image property
+      for (var imageProperty in imageProperties) {
+        if (imageProperty != null) {
+          for (String imagePath in imageProperty.split(',')) {
+            File imageFile = File(imagePath);
+            if (await imageFile.exists()) {
+              List<int> imageBytes = await imageFile.readAsBytes();
+              String base64Image = base64Encode(imageBytes);
+              base64Images.add(base64Image);
+            } else {
+              print('Image not found: $imagePath');
+            }
+          }
         }
       }
 
-      for (String imagePath in data.imgLKGTimeTable!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
-        }
-      }
-
-      for (String imagePath in data.imgUKGTimeTable!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
-        }
-      }
-
-      for (String imagePath in data.imgClass!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
-        }
-      }
-
-      for (String imagePath in data.imgLib!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
-        }
-      }
-
-      for (String imagePath in data.imgTraining!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
-        }
-      }
-
-      for (String imagePath in data.imgFLN!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
-        }
-      }
-
-      for (String imagePath in data.imgActivity!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
-        }
-      }
-
-      for (String imagePath in data.imgTLM!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
-        }
-      }
-
-      // Update the enrolment data to include Base64 image strings
+      // Update the data to include Base64 image strings
       Map<String, dynamic> updatedData = jsonDecode(jsonString);
       updatedData['imgNurTimeTable'] = base64Images; // Store Base64 instead of file paths
       updatedData['imgLKGTimeTable'] = base64Images; // Store Base64 instead of file paths

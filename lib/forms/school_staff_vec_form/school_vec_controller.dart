@@ -36,6 +36,30 @@ class SchoolStaffVecController extends GetxController with BaseController {
   final TextEditingController QualSpecifyController = TextEditingController();
   final TextEditingController QualSpecify2Controller = TextEditingController();
 
+  // Start of Showing Fields
+  bool showBasicDetails = true; // For show Basic Details
+  bool showStaffDetails = false; //For show and hide School Facilities
+  bool showSmcVecDetails = false; //For show and hide Library
+  // End of Showing Fields
+
+  List<String> splitSchoolLists = [];
+  String? selectedDesignation;
+  String? selected2Designation;
+  String? selected3Designation;
+
+  // Start of selecting Field
+  String? selectedValue = ''; // For the UDISE code
+  String? selectedValue2 = ''; // For the Gender
+  String? selectedValue3 = ''; // For the Gender2
+  // End of selecting Field error
+
+  // Start of radio Field
+  bool radioFieldError = false; // For the UDISE code
+  bool radioFieldError2 = false; // For the Gender
+  bool radioFieldError3 = false; // For the Gender2
+
+  // End of radio Field error
+
 
   final FocusNode _tourIdFocusNode = FocusNode();
   FocusNode get tourIdFocusNode => _tourIdFocusNode;

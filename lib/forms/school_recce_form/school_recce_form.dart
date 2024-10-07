@@ -6078,14 +6078,18 @@ class _SchoolRecceFormState extends State<SchoolRecceForm> {
   }
 }
 
+
+
 Future<void> saveDataToFile(SchoolRecceModal data) async {
   try {
-    // Request storage permissions
+    // Request storage permissions (needed for Android)
     var status = await Permission.storage.request();
     if (status.isGranted) {
-      // Use path_provider to get a valid directory, such as downloads
+      // Determine the correct storage directory based on the platform
       Directory? directory;
+
       if (Platform.isAndroid) {
+        // On Android, we use the external storage directory for files that should be accessible
         directory = await getExternalStorageDirectory();
         if (directory != null) {
           String newPath = '';
@@ -6100,157 +6104,55 @@ Future<void> saveDataToFile(SchoolRecceModal data) async {
           }
           directory = Directory("$newPath/Download");
         }
+      } else if (Platform.isIOS) {
+        // On iOS, we use the documents directory
+        directory = await getApplicationDocumentsDirectory();
+      } else {
+        // For any other platforms, we default to application documents directory
+        directory = await getApplicationDocumentsDirectory();
       }
 
+      // Create the directory if it doesn't exist
       if (directory != null && !await directory.exists()) {
-        await directory.create(
-            recursive: true); // Create the directory if it doesn't exist
+        await directory.create(recursive: true);
       }
 
-      final path =
-          '${directory!.path}/school_facilities_form_${data.submittedBy}.txt';
+      // Prepare the file path with a unique identifier (using `submittedBy`)
+      final path = '${directory!.path}/school_facilities_form_${data.submittedBy}.txt';
       print('Saving file to: $path'); // Debugging output
 
-      // Convert the EnrolmentCollectionModel object to a JSON string
+      // Convert the SchoolRecceModal object to a JSON string
       String jsonString = jsonEncode(data);
 
-      // Handle Base64 conversion for images
-      List<String> base64Images = [];
-      for (String imagePath in data.boardImg!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
+      // Function to convert image paths to Base64
+      Future<List<String>> convertImagesToBase64(List<String> imagePaths) async {
+        List<String> base64Images = [];
+        for (String imagePath in imagePaths) {
+          File imageFile = File(imagePath);
+          if (await imageFile.exists()) {
+            List<int> imageBytes = await imageFile.readAsBytes();
+            String base64Image = base64Encode(imageBytes);
+            base64Images.add(base64Image);
+          } else {
+            print('Image not found: $imagePath');
+          }
         }
+        return base64Images;
       }
 
-      for (String imagePath in data.buildingImg!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
-        }
-      }
-
-      for (String imagePath in data.smartClassImg!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
-        }
-      }
-
-      for (String imagePath in data.projectorImg!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
-        }
-      }
-
-      for (String imagePath in data.computerImg!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
-        }
-      }
-
-      for (String imagePath in data.libImg!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
-        }
-      }
-
-      for (String imagePath in data.spaceImg!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
-        }
-      }
-
-      for (String imagePath in data.enrollmentImg!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
-        }
-      }
-
-      for (String imagePath in data.DigiLabRoomImg!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
-        }
-      }
-
-      for (String imagePath in data.libRoomImg!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
-        }
-      }
-
-      for (String imagePath in data.registerImg!.split(',')) {
-        File imageFile = File(imagePath);
-        if (await imageFile.exists()) {
-          List<int> imageBytes = await imageFile.readAsBytes();
-          String base64Image = base64Encode(imageBytes);
-          base64Images.add(base64Image);
-        } else {
-          print('Image not found: $imagePath');
-        }
-      }
-
-      // Update the enrolment data to include Base64 image strings
+      // Convert and update images into Base64 format
       Map<String, dynamic> updatedData = jsonDecode(jsonString);
-      updatedData['boardImg'] = base64Images;
-      updatedData['DigiLabRoomImg'] = base64Images;
-      updatedData['libRoomImg'] = base64Images;
-      updatedData['registerImg'] = base64Images;
-
-      updatedData['buildingImg'] = base64Images;
-      updatedData['enrollmentImg'] = base64Images;
-      updatedData['smartClassImg'] = base64Images;
-      updatedData['projectorImg'] = base64Images;
-      updatedData['computerImg'] = base64Images;
-      updatedData['spaceImg'] = base64Images;
-      updatedData['libImg'] = base64Images;
+      updatedData['boardImg'] = await convertImagesToBase64(data.boardImg!.split(','));
+      updatedData['buildingImg'] = await convertImagesToBase64(data.buildingImg!.split(','));
+      updatedData['smartClassImg'] = await convertImagesToBase64(data.smartClassImg!.split(','));
+      updatedData['projectorImg'] = await convertImagesToBase64(data.projectorImg!.split(','));
+      updatedData['computerImg'] = await convertImagesToBase64(data.computerImg!.split(','));
+      updatedData['libImg'] = await convertImagesToBase64(data.libImg!.split(','));
+      updatedData['spaceImg'] = await convertImagesToBase64(data.spaceImg!.split(','));
+      updatedData['enrollmentImg'] = await convertImagesToBase64(data.enrollmentImg!.split(','));
+      updatedData['DigiLabRoomImg'] = await convertImagesToBase64(data.DigiLabRoomImg!.split(','));
+      updatedData['libRoomImg'] = await convertImagesToBase64(data.libRoomImg!.split(','));
+      updatedData['registerImg'] = await convertImagesToBase64(data.registerImg!.split(','));
 
       // Write the updated JSON string to a file
       File file = File(path);

@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
+import '../components/custom_confirmation.dart';
 import '../forms/alfa_observation_form/alfa_observation_form.dart';
 import '../forms/cab_meter_tracking_form/cab_meter.dart';
 import '../forms/issue_tracker/issue_tracker_form.dart';
@@ -61,9 +62,20 @@ class _HomeScreenState extends State<HomeScreen> {
     final responsive = Responsive(context);
 
     return WillPopScope(
-      onWillPop: () async {
-        Navigator.pop(context); // Custom back button behavior
-        return false; // Prevent default back button behavior
+      onWillPop:() async {
+        IconData icon = Icons.check_circle;
+        bool shouldExit = await showDialog(
+            context: context,
+            builder: (_) => Confirmation(
+                iconname: icon,
+                title: 'Exit Confirmation',
+                yes: 'Ok',
+
+                desc: 'To leave this screen you have to close the app',
+                onPressed: () async {
+
+                }));
+        return shouldExit;
       },
       child: Scaffold(
         appBar: AppBar(
@@ -174,7 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         style: AppStyles.captionText(
                                           context,
                                           AppColors.onBackground,
-                                          responsive.responsiveValue(small: 10, medium: 12, large: 14),
+                                          responsive.responsiveValue(small: 12, medium: 14, large: 16), // Use responsive sizes here
                                         ),
                                       ),
                                     ),

@@ -1,56 +1,32 @@
-import 'dart:async';
-import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
+import 'dart:convert';
 
-class DBHelper {
-  static Database? _database;
+class FormDataModel {
+  final String school;
+  final String tourId;
+  final String formLabel;
+  final Map<String, dynamic> data;
 
-  Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await initDB();
-    return _database!;
-  }
+  FormDataModel(
+      {required this.school,
+      required this.tourId,
+      required this.formLabel,
+      required this.data});
 
-  Future<Database> initDB() async {
-    String path = join(await getDatabasesPath(), 'offline_form_data.db');
-    return openDatabase(
-      path,
-      onCreate: (db, version) async {
-        await db.execute('''
-        CREATE TABLE formData (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          tourId TEXT,
-          school TEXT,
-          formLabel TEXT,
-          data TEXT
-        )
-        ''');
-      },
-      version: 1,
-    );
-  }
-
-  Future<void> insertFormData(String tourId, String school, String formLabel, String data) async {
-    final db = await database;
-    await db.insert('formData', {
-      'tourId': tourId,
+  Map<String, dynamic> toMap() {
+    return {
       'school': school,
+      'tourId': tourId,
       'formLabel': formLabel,
-      'data': data,
-    });
+      'data': jsonEncode(data), // Convert to JSON string
+    };
   }
 
-  Future<List<Map<String, dynamic>>> fetchOfflineFormData(String tourId, String school, String formLabel) async {
-    final db = await database;
-    return await db.query(
-      'formData',
-      where: 'tourId = ? AND school = ? AND formLabel = ?',
-      whereArgs: [tourId, school, formLabel],
+  factory FormDataModel.fromMap(Map<String, dynamic> map) {
+    return FormDataModel(
+      school: map['school'],
+      tourId: map['tourId'],
+      formLabel: map['formLabel'],
+      data: jsonDecode(map['data']), // Convert back to Map
     );
-  }
-
-  Future<void> clearFormData() async {
-    final db = await database;
-    await db.delete('formData');
   }
 }
